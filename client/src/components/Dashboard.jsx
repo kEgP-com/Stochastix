@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { calculatePMF } from '../lib/probability';
-
 export default function Dashboard({ socket, currentUser }) {
-  const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // overview, history, theory, tiebreaker
   const [historyFilter, setHistoryFilter] = useState('all'); // all, win, loss
   const [theoryDiceCount, setTheoryDiceCount] = useState(2);
@@ -118,10 +116,10 @@ export default function Dashboard({ socket, currentUser }) {
   const filteredHistory = useMemo(() => {
     if (historyFilter === 'all') return history;
     return history.filter(g => {
-      const isWin = g.winner === currentUser;
+      const isWin = g.winner === currentUser?.username;
       return historyFilter === 'win' ? isWin : !isWin;
     });
-  }, [history, historyFilter, currentUser]);
+  }, [history, historyFilter, currentUser?.username]);
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -187,7 +185,7 @@ export default function Dashboard({ socket, currentUser }) {
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                  <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Your Wins</div>
                  <div className="text-3xl font-black text-green-600 dark:text-green-400">
-                    {history.filter(g => g.winner === currentUser).length}
+                    {history.filter(g => g.winner === currentUser?.username).length}
                  </div>
                </div>
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
@@ -224,14 +222,14 @@ export default function Dashboard({ socket, currentUser }) {
             ) : (
               <div className="space-y-4">
                 {[...filteredHistory].reverse().map((game, i) => (
-                  <div key={i} className={`p-4 rounded-xl border ${game.winner === currentUser ? 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'} transition-colors`}>
+                  <div key={i} className={`p-4 rounded-xl border ${game.winner === currentUser?.username ? 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'} transition-colors`}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 font-mono mb-1">
                           {new Date(game.timestamp).toLocaleDateString()} {new Date(game.timestamp).toLocaleTimeString()}
                         </div>
                         <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-lg">
-                          Winner: <span className={game.winner === currentUser ? 'text-green-600 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}>{game.winner}</span> 👑
+                          Winner: <span className={game.winner === currentUser?.username ? 'text-green-600 dark:text-green-400' : 'text-indigo-600 dark:text-indigo-400'}>{game.winner}</span> 👑
                         </div>
                       </div>
                       <div className="text-right">

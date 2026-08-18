@@ -35,6 +35,21 @@ function App() {
     }
   }, [isDark]);
 
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // If it's an old string fallback to object
+        if (typeof parsed === 'string') return { username: parsed, points: 1000 };
+        return parsed;
+      } catch (e) {
+        return { username: saved, points: 1000 };
+      }
+    }
+    return null;
+  });
+
   useEffect(() => {
     socket.on('roomCreated', (id) => {
       setRoomId(id);
@@ -65,9 +80,10 @@ function App() {
       }, 2500); 
     });
 
-    socket.on('authSuccess', (username) => {
-      setCurrentUser(username);
-      localStorage.setItem('currentUser', username);
+    socket.on('authSuccess', (userData) => {
+      const data = typeof userData === 'string' ? { username: userData, points: 1000 } : userData;
+      setCurrentUser(data);
+      localStorage.setItem('currentUser', JSON.stringify(data));
       setError('');
     });
 
@@ -96,8 +112,6 @@ function App() {
       setPendingState(null);
     }
   }, [isRolling, isTiebreakerAction, pendingState]);
-
-  const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('currentUser') || '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -118,18 +132,18 @@ function App() {
   };
 
   const logout = () => {
-    setCurrentUser('');
+    setCurrentUser(null);
     localStorage.removeItem('currentUser');
     if (roomState) leaveRoom();
   };
 
   const createRoom = () => {
-    socket.emit('createRoom', { name: currentUser, isSinglePlayer: false });
+    socket.emit('createRoom', { name: currentUser.username, isSinglePlayer: false });
   };
 
   const joinRoom = (id) => {
     if (!id) return setError('Please enter a room code');
-    socket.emit('joinRoom', { roomId: id, name: currentUser });
+    socket.emit('joinRoom', { roomId: id, name: currentUser.username });
     setRoomId(id);
   };
 
@@ -173,7 +187,12 @@ function App() {
       <div className="flex items-center space-x-4">
         {currentUser && (
           <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mr-2 flex items-center gap-4">
-            <span>Hello, <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser}</span></span>
+            <span className="flex items-center gap-2">
+              Hello, <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
+              <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700">
+                💰 {currentUser.points || 1000}
+              </span>
+            </span>
             <button 
               onClick={logout} 
               className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm active:scale-95"

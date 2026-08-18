@@ -421,9 +421,27 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                 </svg>
               </div>
               <h2 className="text-4xl font-black text-slate-800 dark:text-slate-100 mb-2">Game Over!</h2>
-              <p className="text-2xl text-green-600 dark:text-green-400 font-bold mb-8">
+              <p className="text-2xl text-green-600 dark:text-green-400 font-bold mb-6">
                 {roomState.players[roomState.finalWinner]?.name || 'Unknown'} wins!
               </p>
+
+              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 text-left border border-slate-200 dark:border-slate-700 shadow-inner mb-6">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-3 border-b border-slate-200 dark:border-slate-700 pb-2">Points Payout</h3>
+                <div className="space-y-2">
+                  {Object.values(roomState.players)
+                    .sort((a, b) => (b.pointChange || 0) - (a.pointChange || 0))
+                    .map((p, i) => (
+                      <div key={p.id} className="flex justify-between items-center text-sm">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {i === 0 ? '👑 ' : ''}{p.name}
+                        </span>
+                        <span className={`font-bold ${p.pointChange > 0 ? 'text-green-600 dark:text-green-400' : p.pointChange < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'}`}>
+                          {p.pointChange > 0 ? '+' : ''}{p.pointChange || 0}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
 
               {tiebreaker && (
                 <div className="mt-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 text-left border border-slate-200 dark:border-slate-700 shadow-inner">

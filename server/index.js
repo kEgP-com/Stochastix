@@ -28,17 +28,61 @@ const saveHistory = () => {
   fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
 };
 
+const usersPath = path.join(__dirname, 'users.json');
+let globalUsers = {};
+if (fs.existsSync(usersPath)) {
+  globalUsers = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+}
+const saveUsers = () => {
+  fs.writeFileSync(usersPath, JSON.stringify(globalUsers, null, 2));
+};
+
+const handleAuth = (username, socket) => {
+  if (!globalUsers[username]) {
+    globalUsers[username] = { points: 1000 };
+    saveUsers();
+  }
+  socket.emit('authSuccess', { username, points: globalUsers[username].points });
+};
+
+const processGameOverPoints = (room) => {
+  const pList = Object.values(room.players);
+  const n = pList.length;
+  // Sort by pieces remaining ascending (fewer pieces = better rank)
+  pList.sort((a, b) => {
+    if (a.id === room.finalWinner) return -1;
+    if (b.id === room.finalWinner) return 1;
+    return a.totalPieces - b.totalPieces;
+  });
+
+  const avgRank = (n + 1) / 2;
+  pList.forEach((p, index) => {
+    const rank = index + 1;
+    const diff = avgRank - rank;
+    p.pointChange = Math.round(diff * 50);
+
+    if (!p.isAI) {
+      if (globalUsers[p.name]) {
+        globalUsers[p.name].points = (globalUsers[p.name].points || 1000) + p.pointChange;
+        saveUsers();
+      }
+    }
+  });
+};
+
 const generateRoomId = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('register', async ({ email, username, password }) => {
-    socket.emit('authSuccess', username);
+    console.log('Register attempt:', username);
+    handleAuth(username, socket);
   });
 
   socket.on('login', async ({ username, password }) => {
-    socket.emit('authSuccess', username);
+    console.log('Login attempt:', username);
+    handleAuth(username, socket);
   });
 
   socket.on('getHistory', () => {
@@ -129,21 +173,21 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomState', room);
 
         if (room.state === 'GAMEOVER') {
+          processGameOverPoints(room);
           globalHistory.push({
             id: room.id,
             timestamp: Date.now(),
             settings: room.settings,
-            players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI })),
+            players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
             winner: room.players[room.finalWinner]?.name || 'Unknown',
             totalRolls: room.history.length,
             rolls: [...room.history],
             tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
           });
           saveHistory();
-          io.emit('historyData', globalHistory);
+          io.to(roomId).emit('roomState', room);
         }
       } else if (result) {
-        // Just broadcast roomState to show who is ready
         io.to(roomId).emit('roomState', room);
       }
     }
@@ -157,13 +201,13 @@ io.on('connection', (socket) => {
         if (res.roundComplete) {
           io.to(roomId).emit('tiebreakerResolved', res.lastRoundData);
           setTimeout(() => {
-            io.to(roomId).emit('roomState', room.getState());
             if (room.state === 'GAMEOVER') {
+              processGameOverPoints(room);
               globalHistory.push({
                 id: room.id,
                 timestamp: Date.now(),
                 settings: room.settings,
-                players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI })),
+                players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
                 winner: room.players[room.finalWinner]?.name || 'Unknown',
                 totalRolls: room.history.length,
                 rolls: [...room.history],
@@ -172,6 +216,7 @@ io.on('connection', (socket) => {
               saveHistory();
               io.emit('historyData', globalHistory);
             }
+            io.to(roomId).emit('roomState', room.getState());
           }, 2500);
         } else {
           io.to(roomId).emit('roomState', room.getState());
