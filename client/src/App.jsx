@@ -87,6 +87,17 @@ function App() {
       setError('');
     });
 
+    socket.on('pointsUpdated', ({ username, points }) => {
+      setCurrentUser(prev => {
+        if (prev && prev.username === username) {
+          const updated = { ...prev, points };
+          localStorage.setItem('currentUser', JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      });
+    });
+
     socket.on('authError', (msg) => {
       setError(msg);
     });
@@ -101,6 +112,7 @@ function App() {
       socket.off('diceRolled');
       socket.off('tiebreakerResolved');
       socket.off('authSuccess');
+      socket.off('pointsUpdated');
       socket.off('authError');
       socket.off('error');
     };

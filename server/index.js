@@ -65,6 +65,7 @@ const processGameOverPoints = (room) => {
       if (globalUsers[p.name]) {
         globalUsers[p.name].points = (globalUsers[p.name].points || 1000) + p.pointChange;
         saveUsers();
+        io.emit('pointsUpdated', { username: p.name, points: globalUsers[p.name].points });
       }
     }
   });
