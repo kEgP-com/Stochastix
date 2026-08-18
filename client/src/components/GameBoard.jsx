@@ -94,18 +94,18 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
       {/* Left Column: Board and Rolls */}
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 transition-colors flex flex-col">
-          <div className="flex justify-between items-center mb-8 border-b border-slate-200 dark:border-slate-700 pb-4">
-            <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Game Board</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-slate-200 dark:border-slate-700 pb-4">
+            <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Game Board</h2>
             {!gameOver && !isTiebreaker && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={autoRoll} onChange={e => setAutoRoll(e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
-                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Auto-Roll</span>
+                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">Auto-Roll</span>
                 </label>
                 <button
                   onClick={readyToRoll}
                   disabled={isRollingGlobal || me?.readyToRoll}
-                  className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all ${(isRollingGlobal || me?.readyToRoll) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all whitespace-nowrap flex-1 sm:flex-none ${(isRollingGlobal || me?.readyToRoll) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? 'Waiting...' : 'Ready To Roll')}
                 </button>
