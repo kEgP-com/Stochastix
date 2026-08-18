@@ -46,7 +46,7 @@ const handleAuth = (username, socket) => {
 };
 
 const processGameOverPoints = (room) => {
-  const pList = Object.values(room.players);
+  const pList = Object.entries(room.players).map(([id, p]) => ({ id, ...p }));
   const n = pList.length;
   // Sort by pieces remaining ascending (fewer pieces = better rank)
   pList.sort((a, b) => {
@@ -59,11 +59,14 @@ const processGameOverPoints = (room) => {
   pList.forEach((p, index) => {
     const rank = index + 1;
     const diff = avgRank - rank;
-    p.pointChange = Math.round(diff * 50);
+    const pointChange = Math.round(diff * 50);
+
+    // Apply the calculated pointChange to the actual room.players object so clients receive it
+    room.players[p.id].pointChange = pointChange;
 
     if (!p.isAI) {
       if (globalUsers[p.name]) {
-        globalUsers[p.name].points = (globalUsers[p.name].points || 1000) + p.pointChange;
+        globalUsers[p.name].points = (globalUsers[p.name].points || 1000) + pointChange;
         saveUsers();
         io.emit('pointsUpdated', { username: p.name, points: globalUsers[p.name].points });
       }
