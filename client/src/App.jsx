@@ -7,7 +7,7 @@ import Dashboard from './components/Dashboard';
 
 // Connect to the local server or deployed server
 const socketUrl = import.meta.env.MODE === 'production' ? undefined : 'http://localhost:3001';
-const socket = io(socketUrl);
+const socket = io(socketUrl, { transports: ['websocket'] });
 function App() {
   const [currentView, setCurrentView] = useState('PLAY'); // 'PLAY' | 'DASHBOARD'
   const [roomState, setRoomState] = useState(null);
