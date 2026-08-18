@@ -18,56 +18,23 @@ export default function Setup({ roomState, socket }) {
   const totalPlaced = Object.values(placement).reduce((a, b) => a + b, 0);
   const remaining = settings.piecesPerPlayer - totalPlaced;
 
-  // Drag and Drop state
-  const [draggedItem, setDraggedItem] = useState(null);
-
-  const handleDragStart = (e, source) => {
-    setDraggedItem({ source });
-    e.dataTransfer.setData('text/plain', source);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDropOnColumn = (e, targetCol) => {
-    e.preventDefault();
-    if (!draggedItem) return;
-
-    const source = draggedItem.source;
-    if (source === targetCol) return;
-
-    if (source === 'pool') {
-      if (remaining > 0) {
-        setPlacement(prev => ({
-          ...prev,
-          [targetCol]: prev[targetCol] + 1
-        }));
-      }
-    } else {
+  const handleColumnClick = (targetCol) => {
+    if (remaining > 0) {
       setPlacement(prev => ({
         ...prev,
-        [source]: prev[source] - 1,
         [targetCol]: prev[targetCol] + 1
       }));
     }
-    setDraggedItem(null);
   };
 
-  const handleDropOnPool = (e) => {
-    e.preventDefault();
-    if (!draggedItem) return;
-
-    const source = draggedItem.source;
-    if (source !== 'pool') {
+  const handlePieceClick = (sourceCol, e) => {
+    e.stopPropagation();
+    if (placement[sourceCol] > 0) {
       setPlacement(prev => ({
         ...prev,
-        [source]: prev[source] - 1
+        [sourceCol]: prev[sourceCol] - 1
       }));
     }
-    setDraggedItem(null);
   };
 
   const submitPlacement = () => {
@@ -164,19 +131,13 @@ export default function Setup({ roomState, socket }) {
             </div>
 
             {/* Piece Pool */}
-            <div 
-              className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 min-h-[160px] transition-colors flex-1 flex flex-col"
-              onDragOver={handleDragOver}
-              onDrop={handleDropOnPool}
-            >
-              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Piece Pool (Drag from here)</h3>
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 min-h-[160px] transition-colors flex-1 flex flex-col">
+              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Piece Pool</h3>
               <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
                 {Array.from({ length: remaining }).map((_, i) => (
                   <div
                     key={`pool-${i}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'pool')}
-                    className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-lg shadow-md border-b-4 border-blue-700 dark:border-blue-800 cursor-grab active:cursor-grabbing hover:-translate-y-1 hover:shadow-lg transition-transform"
+                    className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-lg shadow-md border-b-4 border-blue-700 dark:border-blue-800 transition-transform"
                   />
                 ))}
                 {remaining === 0 && (
@@ -212,9 +173,8 @@ export default function Setup({ roomState, socket }) {
               {Array.from({ length: maxSum - minSum + 1 }, (_, i) => i + minSum).map(num => (
                 <div 
                   key={num} 
-                  className="flex-1 min-w-[50px] flex flex-col items-center justify-end relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-t-xl transition-colors hover:bg-blue-50/50 dark:hover:bg-slate-700"
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDropOnColumn(e, num)}
+                  onClick={() => handleColumnClick(num)}
+                  className={`flex-1 min-w-[50px] flex flex-col items-center justify-end relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-t-xl transition-colors ${remaining > 0 ? 'cursor-pointer hover:bg-blue-50/50 dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
                 >
                   <div className="absolute top-0 w-full py-2 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600 text-center rounded-t-xl transition-colors">
                     <span className="text-base font-bold text-slate-600 dark:text-slate-300">{num}</span>
@@ -223,9 +183,9 @@ export default function Setup({ roomState, socket }) {
                     {Array.from({ length: placement[num] }).map((_, i) => (
                       <div 
                         key={`board-${num}-${i}`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, num)}
-                        className="w-full max-w-[40px] h-4 bg-blue-500 dark:bg-blue-600 rounded-sm shadow-sm border-b-2 border-blue-700 dark:border-blue-800 cursor-grab active:cursor-grabbing"
+                        onClick={(e) => handlePieceClick(num, e)}
+                        className="w-full max-w-[40px] h-4 bg-blue-500 dark:bg-blue-600 rounded-sm shadow-sm border-b-2 border-blue-700 dark:border-blue-800 cursor-pointer active:scale-95 hover:bg-red-400 dark:hover:bg-red-500 transition-colors"
+                        title="Click to remove"
                       />
                     ))}
                   </div>
