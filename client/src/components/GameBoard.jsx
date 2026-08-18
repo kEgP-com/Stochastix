@@ -98,10 +98,15 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
             <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Game Board</h2>
             {!gameOver && !isTiebreaker && (
               <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={autoRoll} onChange={e => setAutoRoll(e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500" />
-                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">Auto-Roll</span>
-                </label>
+                <button
+                  onClick={() => setAutoRoll(!autoRoll)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 border ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${autoRoll ? 'border-indigo-600 dark:border-indigo-400' : 'border-slate-400 dark:border-slate-500'}`}>
+                    {autoRoll && <div className="w-2 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full" />}
+                  </div>
+                  <span className="whitespace-nowrap">Auto-Roll</span>
+                </button>
                 <button
                   onClick={readyToRoll}
                   disabled={isRollingGlobal || me?.readyToRoll}
