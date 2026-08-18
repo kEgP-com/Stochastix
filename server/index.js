@@ -34,11 +34,11 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('register', async ({ email, username, password }) => {
-    socket.emit('authError', 'Registration is currently disabled.');
+    socket.emit('authSuccess', username);
   });
 
   socket.on('login', async ({ username, password }) => {
-    socket.emit('authError', 'Login is currently disabled.');
+    socket.emit('authSuccess', username);
   });
 
   socket.on('getHistory', () => {
