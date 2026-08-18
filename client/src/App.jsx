@@ -18,6 +18,7 @@ function App() {
   const [isTiebreakerAction, setIsTiebreakerAction] = useState(false);
   const [tiebreakerResults, setTiebreakerResults] = useState(null);
   const [pendingState, setPendingState] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Dark mode
   const [isDark, setIsDark] = useState(() => {
@@ -178,10 +179,10 @@ function App() {
 
   // Nav Bar
   const Header = () => (
-    <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm transition-colors">
-      <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
+    <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm transition-colors relative z-50">
+      <div className="flex justify-between items-center w-full">
         <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { if(roomState) leaveRoom(); }}>
-          {/* Simple Logo */}
+          {/* Logo */}
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9c-.83 0-1.5-.67-1.5-1.5S6.67 6 7.5 6s1.5.67 1.5 1.5S8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5S17.33 9 16.5 9z"/>
@@ -189,81 +190,146 @@ function App() {
           </div>
           <h1 className="text-xl md:text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Stochastix</h1>
         </div>
-        <nav className="flex space-x-4">
-          <button 
-            onClick={() => setCurrentView('PLAY')} 
-            className={`font-semibold transition ${currentView === 'PLAY' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            Play
-          </button>
-          <button 
-            onClick={() => setCurrentView('DASHBOARD')} 
-            className={`font-semibold transition ${currentView === 'DASHBOARD' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            Dashboard
-          </button>
-        </nav>
-      </div>
-      <div className="flex flex-wrap items-center gap-3 md:gap-4 w-full md:w-auto justify-center md:justify-end">
-        {currentUser && (
-          <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3">
-            <span className="flex items-center gap-2">
-              <span className="hidden md:inline">Hello,</span> <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
-              <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700 whitespace-nowrap">
-                💰 {currentUser.points || 1000}
-              </span>
-            </span>
-            <button 
-              onClick={logout} 
-              className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm active:scale-95 text-xs md:text-sm"
-              title="Logout"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="hidden md:inline">Logout</span>
-            </button>
-          </div>
-        )}
-        {roomState && (
-          <div className="flex items-center space-x-2 md:space-x-3 ml-0 md:ml-4 border-l-0 md:border-l border-slate-200 dark:border-slate-700 pl-0 md:pl-4">
-            <div className="bg-blue-50 dark:bg-slate-900/60 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg font-mono font-bold text-xs md:text-sm border border-blue-200 dark:border-blue-800 shadow-inner tracking-wider">
-              <span className="hidden md:inline text-blue-400 dark:text-blue-500 mr-1 text-xs uppercase tracking-widest font-sans">Room Code:</span>
-              {roomState.id}
-            </div>
-            <button 
-              onClick={leaveRoom}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 md:px-4 py-1.5 rounded-lg font-bold text-xs md:text-sm shadow-md shadow-red-600/20 active:scale-95 transition-all whitespace-nowrap"
-            >
-              Leave Game
-            </button>
-          </div>
-        )}
-        <button
-          onClick={() => setIsDark(!isDark)}
-          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-          title="Toggle Theme"
+
+        {/* Mobile Hamburger Button */}
+        <button 
+          className="md:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors focus:outline-none"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          {isDark ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-          )}
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+          </svg>
         </button>
-        {roomState && currentView === 'PLAY' && !roomState.isSinglePlayer && (
-          <div className="text-sm font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-1.5 rounded-full border border-blue-200 dark:border-blue-800 shadow-inner">
-            Room Code: <span className="font-bold">{roomState.id}</span>
+
+        {/* Desktop Nav Items */}
+        <div className="hidden md:flex items-center space-x-8">
+          <nav className="flex space-x-4">
+            <button 
+              onClick={() => setCurrentView('PLAY')} 
+              className={`font-semibold transition ${currentView === 'PLAY' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              Play
+            </button>
+            <button 
+              onClick={() => setCurrentView('DASHBOARD')} 
+              className={`font-semibold transition ${currentView === 'DASHBOARD' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              Dashboard
+            </button>
+          </nav>
+          
+          <div className="flex items-center gap-4">
+            {currentUser && (
+              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3">
+                <span className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
+                  <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700 whitespace-nowrap">
+                    💰 {currentUser.points || 1000}
+                  </span>
+                </span>
+                <button 
+                  onClick={logout} 
+                  className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 p-2 rounded-lg transition-all shadow-sm active:scale-95"
+                  title="Logout"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {roomState && (
+              <div className="flex items-center space-x-3 border-l border-slate-200 dark:border-slate-700 pl-4">
+                <div className="bg-blue-50 dark:bg-slate-900/60 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg font-mono font-bold text-sm border border-blue-200 dark:border-blue-800 shadow-inner tracking-wider">
+                  <span className="text-blue-400 dark:text-blue-500 mr-1 text-xs uppercase tracking-widest font-sans">Room:</span>
+                  {roomState.id}
+                </div>
+                <button 
+                  onClick={leaveRoom}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg font-bold text-sm shadow-md shadow-red-600/20 active:scale-95 transition-all whitespace-nowrap"
+                >
+                  Leave
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+              title="Toggle Theme"
+            >
+              {isDark ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              )}
+            </button>
           </div>
-        )}
-        {roomState && (
-          <button 
-            onClick={leaveRoom}
-            className="bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 font-bold px-4 py-1.5 rounded-full hover:bg-red-200 dark:hover:bg-red-800/60 transition shadow-sm border border-red-200 dark:border-red-800 text-sm"
-          >
-            Leave Game
-          </button>
-        )}
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-col space-y-4 animate-fade-in">
+          <nav className="flex flex-col space-y-2">
+            <button 
+              onClick={() => { setCurrentView('PLAY'); setIsMobileMenuOpen(false); }} 
+              className={`text-left px-4 py-2 rounded-lg font-semibold transition ${currentView === 'PLAY' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+            >
+              Play
+            </button>
+            <button 
+              onClick={() => { setCurrentView('DASHBOARD'); setIsMobileMenuOpen(false); }} 
+              className={`text-left px-4 py-2 rounded-lg font-semibold transition ${currentView === 'DASHBOARD' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+            >
+              Dashboard
+            </button>
+          </nav>
+
+          {currentUser && (
+            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
+                <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 dark:border-yellow-700">
+                  💰 {currentUser.points || 1000}
+                </span>
+              </div>
+              <button 
+                onClick={logout}
+                className="text-red-500 hover:text-red-600 font-bold text-sm"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center px-4">
+            <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">Theme</span>
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
+            >
+              {isDark ? "🌞 Light Mode" : "🌙 Dark Mode"}
+            </button>
+          </div>
+
+          {roomState && (
+            <div className="flex flex-col gap-2 pt-2 pb-2">
+              <div className="bg-blue-50 dark:bg-slate-900/60 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-lg font-mono font-bold text-sm border border-blue-200 dark:border-blue-800 text-center tracking-wider">
+                <span className="text-blue-400 dark:text-blue-500 mr-2 text-xs uppercase tracking-widest font-sans">Room Code:</span>
+                {roomState.id}
+              </div>
+              <button 
+                onClick={leaveRoom}
+                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md shadow-red-600/20"
+              >
+                Leave Game
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 
