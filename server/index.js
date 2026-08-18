@@ -28,62 +28,17 @@ const saveHistory = () => {
   fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
 };
 
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const bcrypt = require('bcryptjs');
-
-let db;
-(async () => {
-  db = await open({
-    filename: path.join(__dirname, 'database.sqlite'),
-    driver: sqlite3.Database
-  });
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE,
-      username TEXT UNIQUE COLLATE NOCASE,
-      password TEXT
-    )
-  `);
-})();
-
 const generateRoomId = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('register', async ({ email, username, password }) => {
-    if (!db) return socket.emit('authError', 'Database not ready');
-    try {
-      const existing = await db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
-      if (existing) {
-        if (existing.username.toLowerCase() === username.toLowerCase()) return socket.emit('authError', 'Username already exists');
-        if (existing.email.toLowerCase() === email.toLowerCase()) return socket.emit('authError', 'Email already in use');
-      }
-      const hash = await bcrypt.hash(password, 10);
-      await db.run('INSERT INTO users (email, username, password) VALUES (?, ?, ?)', [email, username, hash]);
-      socket.emit('authSuccess', username);
-    } catch (e) {
-      console.error(e);
-      socket.emit('authError', 'Registration failed');
-    }
+    socket.emit('authError', 'Registration is currently disabled.');
   });
 
   socket.on('login', async ({ username, password }) => {
-    if (!db) return socket.emit('authError', 'Database not ready');
-    try {
-      const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
-      if (!user) return socket.emit('authError', 'Invalid username or password');
-      
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) return socket.emit('authError', 'Invalid username or password');
-      
-      socket.emit('authSuccess', user.username);
-    } catch (e) {
-      console.error(e);
-      socket.emit('authError', 'Login failed');
-    }
+    socket.emit('authError', 'Login is currently disabled.');
   });
 
   socket.on('getHistory', () => {
