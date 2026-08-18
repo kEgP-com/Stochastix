@@ -9,7 +9,8 @@ class Room {
       diceSides: 6,
       piecesPerPlayer: 12,
       maxPlayers: 8,
-      tiebreakerMode: 'coin' // 'coin' or 'roll'
+      tiebreakerMode: 'coin',
+      maxRolls: 'Unlimited'
     };
     this.history = []; 
     this.host = null;
@@ -152,6 +153,7 @@ class Room {
     this.history.push(sum);
 
     let winners = [];
+    let someoneFinished = false;
     for (const [id, player] of Object.entries(this.players)) {
       if (player.pieces[sum] > 0) {
         player.pieces[sum] -= 1;
@@ -159,6 +161,23 @@ class Room {
       }
       if (player.totalPieces === 0) {
         winners.push(id);
+        someoneFinished = true;
+      }
+    }
+
+    if (!someoneFinished && this.settings.maxRolls !== 'Unlimited') {
+      const maxLimit = parseInt(this.settings.maxRolls, 10);
+      if (!isNaN(maxLimit) && this.history.length >= maxLimit) {
+        // Limit reached! Find player(s) with least pieces
+        let lowestPieces = Infinity;
+        for (const [id, player] of Object.entries(this.players)) {
+          if (player.totalPieces < lowestPieces) {
+            lowestPieces = player.totalPieces;
+            winners = [id];
+          } else if (player.totalPieces === lowestPieces) {
+            winners.push(id);
+          }
+        }
       }
     }
 

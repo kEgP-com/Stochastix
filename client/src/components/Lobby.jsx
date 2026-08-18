@@ -109,6 +109,22 @@ export default function Lobby({ roomState, socket }) {
             </div>
             
             <div>
+              <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">Max Rolls</label>
+              <select
+                disabled={!isHost}
+                value={roomState.settings.maxRolls || 'Unlimited'}
+                onChange={(e) => handleSettingsChange('maxRolls', e.target.value)}
+                className="w-full border border-slate-200 dark:border-slate-600 rounded-lg p-2 disabled:bg-slate-50 disabled:dark:bg-slate-800 bg-white dark:bg-slate-700 text-slate-800 dark:text-white transition-colors focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="Unlimited">Unlimited</option>
+                <option value="30">30 Rolls</option>
+                <option value="50">50 Rolls</option>
+                <option value="100">100 Rolls</option>
+                <option value="200">200 Rolls</option>
+              </select>
+            </div>
+            
+            <div>
               <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">Dice Sides</label>
               <select
                 disabled={!isHost}
