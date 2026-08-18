@@ -200,7 +200,9 @@ io.on('connection', (socket) => {
 const clientDistPath = path.join(__dirname, '../client/dist');
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
-  app.get('*', (req, res) => {
+  
+  // Catch-all route to serve the React app (replaces app.get('*') to avoid path-to-regexp errors)
+  app.use((req, res) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 }
