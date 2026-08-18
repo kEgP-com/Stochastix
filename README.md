@@ -47,4 +47,5 @@ cd ../client && npm run build
 cd ../server
 node index.js
 ```
-The game will be live at `http://localhost:3001`!
+The game will be live at `http://localhost:3001`! or 
+https://stochastix-1.onrender.com/
