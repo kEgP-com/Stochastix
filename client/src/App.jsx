@@ -180,7 +180,7 @@ function App() {
   // Nav Bar
   const Header = () => (
     <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm transition-colors relative z-50">
-      <div className="flex justify-between items-center w-full">
+      <div className="flex justify-between items-center w-full relative">
         <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { if(roomState) leaveRoom(); }}>
           {/* Logo */}
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
@@ -190,6 +190,22 @@ function App() {
           </div>
           <h1 className="text-xl md:text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Stochastix</h1>
         </div>
+
+        {/* Centered Desktop Nav Items */}
+        <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 space-x-8">
+          <button 
+            onClick={() => setCurrentView('PLAY')} 
+            className={`font-semibold text-lg transition ${currentView === 'PLAY' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Play
+          </button>
+          <button 
+            onClick={() => setCurrentView('DASHBOARD')} 
+            className={`font-semibold text-lg transition ${currentView === 'DASHBOARD' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Dashboard
+          </button>
+        </nav>
 
         {/* Mobile Hamburger Button */}
         <button 
@@ -201,23 +217,8 @@ function App() {
           </svg>
         </button>
 
-        {/* Desktop Nav Items */}
-        <div className="hidden md:flex items-center space-x-8">
-          <nav className="flex space-x-4">
-            <button 
-              onClick={() => setCurrentView('PLAY')} 
-              className={`font-semibold transition ${currentView === 'PLAY' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-            >
-              Play
-            </button>
-            <button 
-              onClick={() => setCurrentView('DASHBOARD')} 
-              className={`font-semibold transition ${currentView === 'DASHBOARD' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-            >
-              Dashboard
-            </button>
-          </nav>
-          
+        {/* Desktop Profile and Icons */}
+        <div className="hidden md:flex items-center gap-4">
           <div className="flex items-center gap-4">
             {currentUser && (
               <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3">
