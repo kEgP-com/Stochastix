@@ -100,17 +100,17 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                 <button
                   onClick={() => setAutoRoll(!autoRoll)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 border ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 ease-in-out active:scale-95 border ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
                 >
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${autoRoll ? 'border-indigo-600 dark:border-indigo-400' : 'border-slate-400 dark:border-slate-500'}`}>
-                    {autoRoll && <div className="w-2 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full" />}
+                  <div className={`w-8 h-4 rounded-full flex items-center p-[2px] transition-colors duration-300 ease-in-out ${autoRoll ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                    <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-in-out ${autoRoll ? 'translate-x-4' : 'translate-x-0'}`} />
                   </div>
                   <span className="whitespace-nowrap">Auto-Roll</span>
                 </button>
                 <button
                   onClick={readyToRoll}
                   disabled={isRollingGlobal || me?.readyToRoll}
-                  className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all whitespace-nowrap flex-1 sm:flex-none ${(isRollingGlobal || me?.readyToRoll) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none ${(isRollingGlobal || me?.readyToRoll) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? 'Waiting...' : 'Ready To Roll')}
                 </button>

@@ -230,7 +230,7 @@ function App() {
                 </span>
                 <button 
                   onClick={logout} 
-                  className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 p-2 rounded-lg transition-all shadow-sm active:scale-95"
+                  className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 p-2 rounded-lg transition-all duration-300 ease-in-out shadow-sm active:scale-95"
                   title="Logout"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -298,7 +298,7 @@ function App() {
               </div>
               <button 
                 onClick={logout}
-                className="bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/60 border border-red-200 dark:border-red-800 px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm active:scale-95 transition-all"
+                className="bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/60 border border-red-200 dark:border-red-800 px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm active:scale-95 transition-all duration-300 ease-in-out"
               >
                 Logout
               </button>
