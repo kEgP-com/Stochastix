@@ -20,14 +20,6 @@ If two or more players eliminate their final block on the exact same roll, a Sud
 - **Rock, Paper, Scissors:** A Best-of-3 match. Choose your move carefully!
 - **Coin Flip:** A classic 50/50 flip. Guess Heads or Tails.
 
-### 4. Casino Points (Gambling) 💰
-Every player starts with a bankroll of **1,000 points**. 
-Stochastix uses a zero-sum placement system:
-- When a game ends, the server calculates the "Average Rank" of all players.
-- If you place **above average**, you steal points from the losers.
-- If you place **below average**, you lose points.
-- The higher your placement, the bigger your payout! 
-
 ---
 
 ## 🚀 Deployment & Tech Stack
