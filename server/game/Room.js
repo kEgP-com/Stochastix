@@ -55,7 +55,6 @@ class Room {
     return true;
   }
 
-  // Calculate PMF for AI
   _getAIPlacement() {
     const { diceCount, diceSides, piecesPerPlayer } = this.settings;
     let dp = new Array(diceSides + 1).fill(0);
@@ -74,28 +73,31 @@ class Room {
     }
 
     const totalWays = Math.pow(diceSides, diceCount);
-    const pmf = [];
-    for (let i = diceCount; i <= diceCount * diceSides; i++) {
-      pmf.push({ sum: i, probability: dp[i] / totalWays });
-    }
-
+    
     const placement = {};
     for (let i = diceCount; i <= diceCount * diceSides; i++) placement[i] = 0;
-    
-    let piecesLeft = piecesPerPlayer;
-    pmf.forEach(p => {
-      const pieces = Math.floor(p.probability * piecesPerPlayer);
-      placement[p.sum] = pieces;
-      piecesLeft -= pieces;
-    });
 
-    const sortedPmf = [...pmf].sort((a, b) => b.probability - a.probability);
-    let i = 0;
-    while (piecesLeft > 0 && i < sortedPmf.length) {
-      placement[sortedPmf[i].sum]++;
-      piecesLeft--;
-      i++;
+    // Add noise so AI isn't playing perfectly
+    const weights = [];
+    for (let i = diceCount; i <= diceCount * diceSides; i++) {
+        const trueProb = dp[i] / totalWays;
+        // 60% smart math, 40% complete randomness
+        const noisyWeight = (trueProb * 0.6) + (Math.random() * 0.4);
+        weights.push({ sum: i, weight: noisyWeight });
     }
+
+    for (let p = 0; p < piecesPerPlayer; p++) {
+        const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
+        let r = Math.random() * totalWeight;
+        for (let i = 0; i < weights.length; i++) {
+            r -= weights[i].weight;
+            if (r <= 0 || i === weights.length - 1) {
+                placement[weights[i].sum]++;
+                break;
+            }
+        }
+    }
+
     return placement;
   }
 
