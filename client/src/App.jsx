@@ -106,6 +106,13 @@ function App() {
       setError(msg);
     });
 
+    socket.on('disconnect', () => {
+      // If the server restarts, clear the ghost room
+      setRoomState(null);
+      setPendingState(null);
+      setRoomId('');
+    });
+
     return () => {
       socket.off('roomCreated');
       socket.off('roomState');
@@ -115,6 +122,7 @@ function App() {
       socket.off('pointsUpdated');
       socket.off('authError');
       socket.off('error');
+      socket.off('disconnect');
     };
   }, []);
 
