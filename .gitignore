@@ -1,0 +1,11 @@
+node_modules/
+.env
+.DS_Store
+
+# Server generated files
+server/history.json
+server/database.sqlite
+server/database.sqlite-journal
+
+# Client build output
+client/dist/
