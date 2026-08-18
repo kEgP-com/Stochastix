@@ -40,7 +40,7 @@ export default function Lobby({ roomState, socket }) {
         {roomState.isSinglePlayer ? 'Single Player Setup' : 'Multiplayer Lobby'}
       </h2>
       
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg text-slate-700 dark:text-slate-300">

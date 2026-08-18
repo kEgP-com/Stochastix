@@ -330,20 +330,20 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               </div>
 
               {tiebreaker.tiedPlayers.includes(socket.id) && !tiebreaker.currentFlips[socket.id] && (
-                <div className="flex gap-4 justify-center">
+                <div className="flex flex-wrap gap-4 justify-center">
                   {settings.tiebreakerMode === 'coin' ? (
                     <>
                       <button 
                         onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'H' })}
                         disabled={isTiebreakerAction}
-                        className="bg-amber-500 hover:bg-amber-600 shadow-amber-500/50 text-slate-900 font-black text-xl py-4 px-8 rounded-full transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-amber-500 hover:bg-amber-600 shadow-amber-500/50 text-slate-900 font-black text-lg md:text-xl py-3 md:py-4 px-6 md:px-8 rounded-full transition-all active:scale-95 shadow-lg disabled:opacity-50"
                       >
                         HEADS
                       </button>
                       <button 
                         onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'T' })}
                         disabled={isTiebreakerAction}
-                        className="bg-amber-500 hover:bg-amber-600 shadow-amber-500/50 text-slate-900 font-black text-xl py-4 px-8 rounded-full transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-amber-500 hover:bg-amber-600 shadow-amber-500/50 text-slate-900 font-black text-lg md:text-xl py-3 md:py-4 px-6 md:px-8 rounded-full transition-all active:scale-95 shadow-lg disabled:opacity-50"
                       >
                         TAILS
                       </button>
@@ -353,21 +353,21 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                       <button 
                         onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'rock' })}
                         disabled={isTiebreakerAction}
-                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-xl py-3 px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-lg md:text-xl py-2 md:py-3 px-4 md:px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
                       >
                         ✊ ROCK
                       </button>
                       <button 
                         onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'paper' })}
                         disabled={isTiebreakerAction}
-                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-xl py-3 px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-lg md:text-xl py-2 md:py-3 px-4 md:px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
                       >
                         ✋ PAPER
                       </button>
                       <button 
                         onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'scissors' })}
                         disabled={isTiebreakerAction}
-                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-xl py-3 px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-lg md:text-xl py-2 md:py-3 px-4 md:px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
                       >
                         ✌️ SCISSORS
                       </button>

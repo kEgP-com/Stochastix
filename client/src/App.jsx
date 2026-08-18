@@ -178,8 +178,8 @@ function App() {
 
   // Nav Bar
   const Header = () => (
-    <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex justify-between items-center shadow-sm transition-colors">
-      <div className="flex items-center space-x-8">
+    <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm transition-colors">
+      <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
         <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { if(roomState) leaveRoom(); }}>
           {/* Simple Logo */}
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
@@ -187,7 +187,7 @@ function App() {
               <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9c-.83 0-1.5-.67-1.5-1.5S6.67 6 7.5 6s1.5.67 1.5 1.5S8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5S17.33 9 16.5 9z"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Stochastix</h1>
+          <h1 className="text-xl md:text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Stochastix</h1>
         </div>
         <nav className="flex space-x-4">
           <button 
@@ -204,40 +204,50 @@ function App() {
           </button>
         </nav>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-wrap items-center gap-3 md:gap-4 w-full md:w-auto justify-center md:justify-end">
         {currentUser && (
-          <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 mr-2 flex items-center gap-4">
+          <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3">
             <span className="flex items-center gap-2">
-              Hello, <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
-              <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700">
+              <span className="hidden md:inline">Hello,</span> <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
+              <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700 whitespace-nowrap">
                 💰 {currentUser.points || 1000}
               </span>
             </span>
             <button 
               onClick={logout} 
-              className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm active:scale-95"
+              className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm active:scale-95 text-xs md:text-sm"
               title="Logout"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              Logout
+              <span className="hidden md:inline">Logout</span>
             </button>
           </div>
         )}
-        <button 
+        {roomState && (
+          <div className="flex items-center space-x-2 md:space-x-3 ml-0 md:ml-4 border-l-0 md:border-l border-slate-200 dark:border-slate-700 pl-0 md:pl-4">
+            <div className="bg-blue-50 dark:bg-slate-900/60 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg font-mono font-bold text-xs md:text-sm border border-blue-200 dark:border-blue-800 shadow-inner tracking-wider">
+              <span className="hidden md:inline text-blue-400 dark:text-blue-500 mr-1 text-xs uppercase tracking-widest font-sans">Room Code:</span>
+              {roomState.id}
+            </div>
+            <button 
+              onClick={leaveRoom}
+              className="bg-red-600 hover:bg-red-700 text-white px-3 md:px-4 py-1.5 rounded-lg font-bold text-xs md:text-sm shadow-md shadow-red-600/20 active:scale-95 transition-all whitespace-nowrap"
+            >
+              Leave Game
+            </button>
+          </div>
+        )}
+        <button
           onClick={() => setIsDark(!isDark)}
-          className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
-          title="Toggle Dark Mode"
+          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+          title="Toggle Theme"
         >
           {isDark ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-               <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
           )}
         </button>
         {roomState && currentView === 'PLAY' && !roomState.isSinglePlayer && (
