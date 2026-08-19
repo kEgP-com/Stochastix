@@ -13,6 +13,7 @@ function App() {
   const [roomState, setRoomState] = useState(null);
   const [roomId, setRoomId] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [lastRoll, setLastRoll] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const [isTiebreakerAction, setIsTiebreakerAction] = useState(false);
@@ -101,6 +102,7 @@ function App() {
 
     socket.on('authError', (msg) => {
       setError(msg);
+      setSuccessMsg('');
     });
 
     socket.on('profileUpdated', (data) => {
@@ -109,7 +111,8 @@ function App() {
     });
 
     socket.on('registerSuccess', () => {
-      setError('Registration successful! Please log in.');
+      setSuccessMsg('Registration successful! Please log in.');
+      setError('');
       setIsLoginMode(true);
       setPassword('');
       setConfirmPassword('');
@@ -117,6 +120,7 @@ function App() {
 
     socket.on('error', (msg) => {
       setError(msg);
+      setSuccessMsg('');
     });
 
     socket.on('disconnect', () => {
@@ -155,46 +159,69 @@ function App() {
   const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
   const [resetCodeSent, setResetCodeSent] = useState(false);
   const [resetCode, setResetCode] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   useEffect(() => {
     socket.on('passwordResetRequested', () => {
       setResetCodeSent(true);
       setError('');
+      setSuccessMsg('');
     });
     socket.on('passwordResetSuccess', () => {
-      setError('Password reset successful! You can now log in.');
+      setSuccessMsg('Password reset successful! You can now log in.');
+      setError('');
       setIsForgotPasswordMode(false);
       setResetCodeSent(false);
       setResetCode('');
       setPassword('');
       setConfirmPassword('');
     });
+    
+    // Stop loading when these events fire
+    const stopLoading = () => setIsAuthLoading(false);
+    socket.on('authSuccess', stopLoading);
+    socket.on('authError', stopLoading);
+    socket.on('error', stopLoading);
+    socket.on('registerSuccess', stopLoading);
+
     return () => {
       socket.off('passwordResetRequested');
       socket.off('passwordResetSuccess');
+      socket.off('authSuccess', stopLoading);
+      socket.off('authError', stopLoading);
+      socket.off('error', stopLoading);
+      socket.off('registerSuccess', stopLoading);
     }
   }, []);
   
   const handleAuth = () => {
+    setError('');
+    setSuccessMsg('');
     if (isLoginMode) {
       if (!username || !password) return setError('Please fill all fields');
+      setIsAuthLoading(true);
       socket.emit('login', { username, password });
     } else {
       if (!email || !username || !password || !confirmPassword) return setError('Please fill all fields');
       if (password !== confirmPassword) return setError('Passwords do not match');
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) return setError('Invalid email address format');
+      setIsAuthLoading(true);
       socket.emit('register', { email, username, password });
     }
   };
 
   const handlePasswordReset = () => {
+    setError('');
+    setSuccessMsg('');
     if (!resetCodeSent) {
       if (!email) return setError('Please enter your email address');
+      setIsAuthLoading(true);
       socket.emit('requestPasswordReset', { email });
     } else {
       if (!resetCode || !password || !confirmPassword) return setError('Please fill all fields');
       if (password !== confirmPassword) return setError('Passwords do not match');
+      setIsAuthLoading(true);
       socket.emit('resetPassword', { email, code: resetCode, newPassword: password });
     }
   };
@@ -395,6 +422,7 @@ function App() {
           </div>
           
           {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-3 rounded-lg mb-6 text-sm font-medium">{error}</div>}
+          {successMsg && <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 p-3 rounded-lg mb-6 text-sm font-medium">{successMsg}</div>}
           
           <div className="space-y-4">
             {isForgotPasswordMode ? (
@@ -413,9 +441,21 @@ function App() {
                     </div>
                     <button
                       onClick={handlePasswordReset}
-                      className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
+                      disabled={isAuthLoading}
+                      className={`w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition shadow-md shadow-blue-500/20 mt-2 flex justify-center items-center h-12 ${
+                        isAuthLoading 
+                          ? 'opacity-75 cursor-wait' 
+                          : 'hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95'
+                      }`}
                     >
-                      Send Reset Code
+                      {isAuthLoading ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        'Send Reset Code'
+                      )}
                     </button>
                   </>
                 ) : (
@@ -454,9 +494,21 @@ function App() {
                     </div>
                     <button
                       onClick={handlePasswordReset}
-                      className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
+                      disabled={isAuthLoading}
+                      className={`w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition shadow-md shadow-blue-500/20 mt-2 flex justify-center items-center h-12 ${
+                        isAuthLoading 
+                          ? 'opacity-75 cursor-wait' 
+                          : 'hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95'
+                      }`}
                     >
-                      Reset Password
+                      {isAuthLoading ? (
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        'Reset Password'
+                      )}
                     </button>
                   </>
                 )}
@@ -515,9 +567,21 @@ function App() {
                 )}
                 <button
                   onClick={handleAuth}
-                  className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
+                  disabled={isAuthLoading}
+                  className={`w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition shadow-md shadow-blue-500/20 mt-2 flex justify-center items-center h-12 ${
+                    isAuthLoading 
+                      ? 'opacity-75 cursor-wait' 
+                      : 'hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95'
+                  }`}
                 >
-                  {isLoginMode ? 'Log In' : 'Sign Up'}
+                  {isAuthLoading ? (
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    isLoginMode ? 'Log In' : 'Sign Up'
+                  )}
                 </button>
                 
                 <div className="flex flex-col items-center gap-3 mt-4">
