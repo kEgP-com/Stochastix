@@ -132,14 +132,30 @@ export default function Dashboard({ socket, currentUser }) {
 
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [newUsername, setNewUsername] = useState(currentUser?.username || '');
 
-  const handleUpdatePassword = (e) => {
+  useEffect(() => {
+    if (showProfileSettings && currentUser) {
+      setNewUsername(currentUser.username);
+    }
+  }, [showProfileSettings, currentUser]);
+
+  const handleUpdateProfile = (e) => {
     e.preventDefault();
     if (newPassword.trim()) {
       socket.emit('updatePassword', { username: currentUser.username, oldPassword: '', newPassword });
-      setShowProfileSettings(false);
-      setNewPassword('');
     }
+    if (newUsername.trim() && newUsername !== currentUser.username) {
+      socket.emit('updateProfile', { oldUsername: currentUser.username, newUsername: newUsername.trim() });
+      const currentLocal = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      currentLocal.username = newUsername.trim();
+      localStorage.setItem('currentUser', JSON.stringify(currentLocal));
+      
+      // Update global user object (if a react context/prop trick is needed, App.jsx handles authSuccess)
+      // We will rely on the server to emit an update or just trust localstorage for next reload
+    }
+    setShowProfileSettings(false);
+    setNewPassword('');
   };
 
   return (
@@ -164,16 +180,26 @@ export default function Dashboard({ socket, currentUser }) {
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in border border-slate-200 dark:border-slate-700">
             <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Profile Settings</h3>
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">New Password</label>
+                <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">Username</label>
+                <input
+                  type="text"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  placeholder="Enter new username"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">New Password (leave blank to keep current)</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Enter new password"
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
                 />
               </div>
               <div className="flex justify-end gap-3 mt-6">

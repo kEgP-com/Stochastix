@@ -48,7 +48,7 @@ const connectDB = async () => {
     // Load into memory for synchronous gameplay
     const users = await User.find();
     users.forEach(u => {
-      globalUsers[u.username] = { points: u.points, password: u.password };
+      globalUsers[u.username] = { points: u.points, password: u.password, email: u.email };
     });
     
     globalHistory = await History.find().lean();
@@ -66,7 +66,7 @@ const saveUsers = async () => {
   for (const [username, data] of Object.entries(globalUsers)) {
     await User.findOneAndUpdate(
       { username },
-      { points: data.points, password: data.password || null },
+      { points: data.points, password: data.password || null, email: data.email || null },
       { upsert: true }
     ).catch(console.error);
   }
@@ -85,13 +85,21 @@ const saveHistory = async (newEntry) => {
   }
 };
 
-const handleAuth = async (username, socket, password) => {
+const handleAuth = async (username, socket, password, email) => {
   if (!globalUsers[username]) {
-    globalUsers[username] = { points: 1000, password: password || null };
+    globalUsers[username] = { points: 1000, password: password || null, email: email || null };
     await saveUsers();
-  } else if (!globalUsers[username].password && password) {
-    globalUsers[username].password = password;
-    await saveUsers();
+  } else {
+    let changed = false;
+    if (!globalUsers[username].password && password) {
+      globalUsers[username].password = password;
+      changed = true;
+    }
+    if (!globalUsers[username].email && email) {
+      globalUsers[username].email = email;
+      changed = true;
+    }
+    if (changed) await saveUsers();
   }
   socket.emit('authSuccess', { username, points: globalUsers[username].points });
 };
@@ -135,7 +143,7 @@ io.on('connection', (socket) => {
     if (globalUsers[username]) {
       return socket.emit('error', 'Username already exists');
     }
-    handleAuth(username, socket, password);
+    handleAuth(username, socket, password, email);
   });
 
   socket.on('login', async ({ username, password }) => {
@@ -144,6 +152,80 @@ io.on('connection', (socket) => {
       return socket.emit('error', 'Incorrect password');
     }
     handleAuth(username, socket, password);
+  });
+
+let passwordResetCodes = {};
+
+  socket.on('requestPasswordReset', ({ email }) => {
+    // Find user by email
+    const userEntry = Object.entries(globalUsers).find(([u, data]) => data.email === email);
+    if (!userEntry) {
+      return socket.emit('error', 'No account found with that email address');
+    }
+    const username = userEntry[0];
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    passwordResetCodes[email] = { code, username, expires: Date.now() + 15 * 60 * 1000 };
+    
+    // Simulate sending email
+    console.log(`\n=== PASSWORD RESET ===\nEmail: ${email}\nCode: ${code}\n======================\n`);
+    socket.emit('passwordResetRequested', { email });
+  });
+
+  socket.on('resetPassword', async ({ email, code, newPassword }) => {
+    const resetData = passwordResetCodes[email];
+    if (!resetData) return socket.emit('error', 'No password reset requested for this email');
+    if (Date.now() > resetData.expires) return socket.emit('error', 'Reset code has expired');
+    if (resetData.code !== code) return socket.emit('error', 'Invalid reset code');
+    
+    const username = resetData.username;
+    if (globalUsers[username]) {
+      globalUsers[username].password = newPassword;
+      await saveUsers();
+      delete passwordResetCodes[email];
+      socket.emit('passwordResetSuccess');
+    }
+  });
+
+  socket.on('updateProfile', async ({ oldUsername, newUsername }) => {
+    if (!globalUsers[oldUsername]) return socket.emit('error', 'User not found');
+    if (oldUsername === newUsername) return;
+    if (globalUsers[newUsername]) return socket.emit('error', 'Username already taken');
+
+    // Move user in memory
+    globalUsers[newUsername] = globalUsers[oldUsername];
+    delete globalUsers[oldUsername];
+    
+    if (process.env.MONGO_URI) {
+      // Create new user, delete old user
+      try {
+        const newUser = new User({ username: newUsername, points: globalUsers[newUsername].points, password: globalUsers[newUsername].password, email: globalUsers[newUsername].email });
+        await newUser.save();
+        await User.deleteOne({ username: oldUsername });
+        
+        // Update history
+        await History.updateMany(
+          { winner: oldUsername },
+          { $set: { winner: newUsername } }
+        );
+        await History.updateMany(
+          { "players.name": oldUsername },
+          { $set: { "players.$.name": newUsername } }
+        );
+      } catch(err) { console.error(err); }
+    }
+    await saveUsers(); // JSON or Mongo fallback update
+    
+    // Update memory history
+    globalHistory.forEach(h => {
+      if (h.winner === oldUsername) h.winner = newUsername;
+      h.players.forEach(p => {
+        if (p.name === oldUsername) p.name = newUsername;
+      });
+    });
+    if (!process.env.MONGO_URI) fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
+
+    socket.emit('profileUpdated', { username: newUsername, points: globalUsers[newUsername].points });
+    io.emit('historyData', globalHistory);
   });
 
   socket.on('getHistory', () => {

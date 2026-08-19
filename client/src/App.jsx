@@ -103,6 +103,11 @@ function App() {
       setError(msg);
     });
 
+    socket.on('profileUpdated', (data) => {
+      setCurrentUser(data);
+      localStorage.setItem('currentUser', JSON.stringify(data));
+    });
+
     socket.on('error', (msg) => {
       setError(msg);
     });
@@ -124,6 +129,7 @@ function App() {
       socket.off('authError');
       socket.off('error');
       socket.off('disconnect');
+      socket.off('profileUpdated');
     };
   }, []);
 
@@ -138,6 +144,28 @@ function App() {
   const [email, setEmail] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
+  const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
+  const [resetCodeSent, setResetCodeSent] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+
+  useEffect(() => {
+    socket.on('passwordResetRequested', () => {
+      setResetCodeSent(true);
+      setError('');
+    });
+    socket.on('passwordResetSuccess', () => {
+      setError('Password reset successful! You can now log in.');
+      setIsForgotPasswordMode(false);
+      setResetCodeSent(false);
+      setResetCode('');
+      setPassword('');
+      setConfirmPassword('');
+    });
+    return () => {
+      socket.off('passwordResetRequested');
+      socket.off('passwordResetSuccess');
+    }
+  }, []);
   
   const handleAuth = () => {
     if (isLoginMode) {
@@ -149,6 +177,17 @@ function App() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) return setError('Invalid email address format');
       socket.emit('register', { email, username, password });
+    }
+  };
+
+  const handlePasswordReset = () => {
+    if (!resetCodeSent) {
+      if (!email) return setError('Please enter your email address');
+      socket.emit('requestPasswordReset', { email });
+    } else {
+      if (!resetCode || !password || !confirmPassword) return setError('Please fill all fields');
+      if (password !== confirmPassword) return setError('Passwords do not match');
+      socket.emit('resetPassword', { email, code: resetCode, newPassword: password });
     }
   };
 
@@ -350,63 +389,147 @@ function App() {
           {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-3 rounded-lg mb-6 text-sm font-medium">{error}</div>}
           
           <div className="space-y-4">
-            {!isLoginMode && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email (for verification)</label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+            {isForgotPasswordMode ? (
+              <>
+                {!resetCodeSent ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your registered email"
+                      />
+                    </div>
+                    <button
+                      onClick={handlePasswordReset}
+                      className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
+                    >
+                      Send Reset Code
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 p-3 rounded-lg mb-4 text-sm font-medium">
+                      A 6-digit code has been sent to your email. (Check server logs if testing locally).
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">6-Digit Code</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white tracking-widest text-center text-lg"
+                        value={resetCode}
+                        onChange={(e) => setResetCode(e.target.value)}
+                        placeholder="000000"
+                        maxLength={6}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                      <input
+                        type="password"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+                      <input
+                        type="password"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      onClick={handlePasswordReset}
+                      className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
+                    >
+                      Reset Password
+                    </button>
+                  </>
+                )}
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => { setIsForgotPasswordMode(false); setError(''); setResetCodeSent(false); }}
+                    className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:underline"
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {!isLoginMode && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email (for verification)</label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Username</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && isLoginMode && handleAuth()}
+                  />
+                </div>
+                {!isLoginMode && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
+                    <input
+                      type="password"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                    />
+                  </div>
+                )}
+                <button
+                  onClick={handleAuth}
+                  className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
+                >
+                  {isLoginMode ? 'Log In' : 'Sign Up'}
+                </button>
+                
+                <div className="flex flex-col items-center gap-3 mt-4">
+                  {isLoginMode && (
+                    <button
+                      onClick={() => { setIsForgotPasswordMode(true); setError(''); }}
+                      className="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }}
+                    className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+                  </button>
+                </div>
+              </>
             )}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Username</label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
-              <input
-                type="password"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && isLoginMode && handleAuth()}
-              />
-            </div>
-            {!isLoginMode && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
-                <input
-                  type="password"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-                />
-              </div>
-            )}
-            <button
-              onClick={handleAuth}
-              className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20 mt-2"
-            >
-              {isLoginMode ? 'Log In' : 'Sign Up'}
-            </button>
-            
-            <div className="text-center mt-4">
-              <button
-                onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }}
-                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                {isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
-              </button>
-            </div>
           </div>
         </div>
       </div>
