@@ -361,7 +361,13 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                       }
                     }
                   } else if (isTiebreakerAction && tiebreakerSpinResult[pId]) {
-                     displayVal = tiebreakerSpinResult[pId];
+                     let val = tiebreakerSpinResult[pId];
+                     if (settings.tiebreakerMode === 'rps') {
+                       if (val === 'rock') val = '✊';
+                       else if (val === 'paper') val = '✋';
+                       else if (val === 'scissors') val = '✌️';
+                     }
+                     displayVal = val;
                   }
 
                   return (
