@@ -287,10 +287,7 @@ let passwordResetCodes = {};
   socket.on('startGame', ({ roomId }) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {
-      const allHumansReady = Object.values(room.players).filter(p => !p.isAI).every(p => p.lobbyReady);
-      if (allHumansReady) {
-        room.state = 'SETUP';
-        room.startSetupPhase();
+      if (room.startGame(socket.id)) {
         io.to(roomId).emit('roomState', room.getState());
       }
     }
