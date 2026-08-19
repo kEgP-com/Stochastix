@@ -26,6 +26,7 @@ class Room {
     this.players[socketId] = {
       name,
       ready: false,
+      lobbyReady: false,
       pieces: {},
       totalPieces: this.settings.piecesPerPlayer,
       isAI
@@ -78,12 +79,23 @@ class Room {
     const placement = {};
     for (let i = diceCount; i <= diceCount * diceSides; i++) placement[i] = 0;
 
-    // Add noise so AI isn't playing perfectly
+    // AI Difficulty weights
+    const difficulty = this.settings.aiDifficulty || 'Medium';
+    let mathWeight = 0.6;
+    let randomWeight = 0.4;
+    
+    if (difficulty === 'Easy') {
+      mathWeight = 0.0;
+      randomWeight = 1.0;
+    } else if (difficulty === 'Hard') {
+      mathWeight = 1.0;
+      randomWeight = 0.0;
+    }
+
     const weights = [];
     for (let i = diceCount; i <= diceCount * diceSides; i++) {
         const trueProb = dp[i] / totalWays;
-        // 60% smart math, 40% complete randomness
-        const noisyWeight = (trueProb * 0.6) + (Math.random() * 0.4);
+        const noisyWeight = (trueProb * mathWeight) + (Math.random() * randomWeight);
         weights.push({ sum: i, weight: noisyWeight });
     }
 
@@ -102,12 +114,21 @@ class Room {
     return placement;
   }
 
+  toggleLobbyReady(socketId) {
+    if (this.state !== 'LOBBY' || !this.players[socketId]) return false;
+    this.players[socketId].lobbyReady = !this.players[socketId].lobbyReady;
+    return true;
+  }
+
   startGame(socketId) {
     if (this.host !== socketId || this.state !== 'LOBBY') return false;
-    this.state = 'SETUP';
     
-    // Auto-setup AI players
+    const allHumansReady = Object.values(this.players).filter(p => !p.isAI).every(p => p.lobbyReady);
+    if (!allHumansReady) return false;
+
+    this.state = 'SETUP';
     for (const p in this.players) {
+      this.players[p].ready = false;
       if (this.players[p].isAI) {
         this.players[p].pieces = this._getAIPlacement();
         this.players[p].ready = true;

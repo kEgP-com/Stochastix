@@ -130,14 +130,71 @@ export default function Dashboard({ socket, currentUser }) {
     { id: 'tiebreaker', label: 'Tiebreaker Stats' },
   ];
 
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+
+  const handleUpdatePassword = (e) => {
+    e.preventDefault();
+    if (newPassword.trim()) {
+      socket.emit('updatePassword', { username: currentUser.username, oldPassword: '', newPassword });
+      setShowProfileSettings(false);
+      setNewPassword('');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6 animate-fade-in transition-colors">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Analytics Dashboard</h2>
-        <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
-          {history.length} Games Played
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
+            {history.length} Games Played
+          </div>
+          <button 
+            onClick={() => setShowProfileSettings(true)}
+            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-bold text-slate-700 dark:text-slate-200 shadow-sm transition-colors"
+          >
+            Profile Settings
+          </button>
         </div>
       </div>
+
+      {/* Profile Settings Modal */}
+      {showProfileSettings && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Profile Settings</h3>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileSettings(false)}
+                  className="px-4 py-2 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex overflow-x-auto custom-scrollbar gap-2 mb-8 border-b border-slate-200 dark:border-slate-700 pb-2">

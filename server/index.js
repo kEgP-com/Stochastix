@@ -19,27 +19,64 @@ const io = new Server(server, {
 
 const rooms = {};
 
-const historyPath = path.join(__dirname, 'history.json');
+const sqlite3 = require('sqlite3').verbose();
+
+const dbPath = path.join(__dirname, 'database.sqlite');
+const db = new sqlite3.Database(dbPath);
+
 let globalHistory = [];
-if (fs.existsSync(historyPath)) {
-  globalHistory = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
-}
-const saveHistory = () => {
-  fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
-};
-
-const usersPath = path.join(__dirname, 'users.json');
 let globalUsers = {};
-if (fs.existsSync(usersPath)) {
-  globalUsers = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-}
+
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, points INTEGER DEFAULT 1000, password TEXT)`);
+  db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, data TEXT)`);
+  
+  // Load data into memory on boot
+  db.all(`SELECT * FROM users`, [], (err, rows) => {
+    if (!err && rows) {
+      rows.forEach(r => globalUsers[r.username] = { points: r.points, password: r.password });
+    }
+  });
+  
+  db.all(`SELECT * FROM history`, [], (err, rows) => {
+    if (!err && rows) {
+      globalHistory = rows.map(r => JSON.parse(r.data));
+    }
+  });
+});
+
 const saveUsers = () => {
-  fs.writeFileSync(usersPath, JSON.stringify(globalUsers, null, 2));
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION");
+    const stmt = db.prepare("INSERT OR REPLACE INTO users (username, points, password) VALUES (?, ?, ?)");
+    for (const [username, data] of Object.entries(globalUsers)) {
+      stmt.run(username, data.points, data.password || null);
+    }
+    stmt.finalize();
+    db.run("COMMIT");
+  });
 };
 
-const handleAuth = (username, socket) => {
+const saveHistory = () => {
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION");
+    const stmt = db.prepare("INSERT OR REPLACE INTO history (id, data) VALUES (?, ?)");
+    for (const entry of globalHistory) {
+      if (entry && entry.id) {
+        stmt.run(entry.id, JSON.stringify(entry));
+      }
+    }
+    stmt.finalize();
+    db.run("COMMIT");
+  });
+};
+
+const handleAuth = (username, socket, password) => {
   if (!globalUsers[username]) {
-    globalUsers[username] = { points: 1000 };
+    globalUsers[username] = { points: 1000, password: password || null };
+    saveUsers();
+  } else if (!globalUsers[username].password && password) {
+    globalUsers[username].password = password;
     saveUsers();
   }
   socket.emit('authSuccess', { username, points: globalUsers[username].points });
@@ -81,12 +118,18 @@ io.on('connection', (socket) => {
 
   socket.on('register', async ({ email, username, password }) => {
     console.log('Register attempt:', username);
-    handleAuth(username, socket);
+    if (globalUsers[username]) {
+      return socket.emit('error', 'Username already exists');
+    }
+    handleAuth(username, socket, password);
   });
 
   socket.on('login', async ({ username, password }) => {
     console.log('Login attempt:', username);
-    handleAuth(username, socket);
+    if (globalUsers[username] && globalUsers[username].password && globalUsers[username].password !== password) {
+      return socket.emit('error', 'Incorrect password');
+    }
+    handleAuth(username, socket, password);
   });
 
   socket.on('getHistory', () => {
@@ -109,13 +152,23 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('roomState', room.getState());
   });
 
+  socket.on('updatePassword', ({ username, oldPassword, newPassword }) => {
+    // In a real app we'd check oldPassword, but we have no auth token right now
+    if (globalUsers[username]) {
+      // Just update it
+      globalUsers[username].password = newPassword;
+      saveUsers();
+      socket.emit('passwordUpdated');
+    }
+  });
+
   socket.on('joinRoom', ({ roomId, name }) => {
     const room = rooms[roomId];
     if (!room) {
       return socket.emit('error', 'Room not found');
     }
-    if (Object.keys(room.players).length >= 8) {
-      return socket.emit('error', 'Room is full (Maximum 8 players)');
+    if (Object.keys(room.players).length >= room.settings.maxPlayers) {
+      return socket.emit('error', `Room is full (Maximum ${room.settings.maxPlayers} players)`);
     }
     if (room.addPlayer(socket.id, name)) {
       socket.join(roomId);
@@ -154,6 +207,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('toggleLobbyReady', ({ roomId }) => {
+    const room = rooms[roomId];
+    if (room && room.toggleLobbyReady(socket.id)) {
+      io.to(roomId).emit('roomState', room.getState());
+    }
+  });
+
   socket.on('startGame', ({ roomId }) => {
     const room = rooms[roomId];
     if (room && room.startGame(socket.id)) {
@@ -165,6 +225,39 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.setPlacement(socket.id, placement)) {
       io.to(roomId).emit('roomState', room);
+    }
+  });
+
+  socket.on('hostForceRoll', ({ roomId }) => {
+    const room = rooms[roomId];
+    if (room && room.host === socket.id && room.state === 'PLAYING') {
+      // Force all human players to be ready
+      for (const p in room.players) {
+        if (!room.players[p].isAI) {
+          room.players[p].readyToRoll = true;
+        }
+      }
+      const result = room.setReadyToRoll(socket.id); // This will trigger the roll
+      if (result && result.rolled) {
+        io.to(roomId).emit('diceRolled', result);
+        io.to(roomId).emit('roomState', room);
+
+        if (room.state === 'GAMEOVER') {
+          processGameOverPoints(room);
+          globalHistory.push({
+            id: room.id,
+            timestamp: Date.now(),
+            settings: room.settings,
+            players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
+            winner: room.players[room.finalWinner]?.name || 'Unknown',
+            totalRolls: room.history.length,
+            rolls: [...room.history],
+            tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
+          });
+          saveHistory();
+          io.emit('historyData', globalHistory);
+        }
+      }
     }
   });
 

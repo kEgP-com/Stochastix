@@ -1,0 +1,1 @@
+const io = require('socket.io-client'); const socket = io('https://stochastix-1.onrender.com'); socket.on('connect', () = console.log('Connected'); socket.emit('login', {username: 'test', password: 'abc'}); }); socket.on('authSuccess', (u) = console.log('Success:', u); process.exit(0); }); socket.on('connect_error', (e) = console.error('Error', e); process.exit(1); });  
