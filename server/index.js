@@ -392,6 +392,7 @@ let passwordResetCodes = {};
             globalHistory.push(newEntry);
             saveHistory(newEntry);
             io.emit('historyData', globalHistory);
+            io.to(roomId).emit('roomState', room.getState());
           }
         }
       }
