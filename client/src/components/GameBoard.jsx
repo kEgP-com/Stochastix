@@ -16,6 +16,14 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
 
   const [rollingFaces, setRollingFaces] = useState([]);
   const [tiebreakerSpinResult, setTiebreakerSpinResult] = useState({});
+  const [myTiebreakerPick, setMyTiebreakerPick] = useState(null);
+
+  // Clear my pick when round changes
+  useEffect(() => {
+    if (roomState?.tiebreaker?.round) {
+      setMyTiebreakerPick(null);
+    }
+  }, [roomState?.tiebreaker?.round]);
 
   useEffect(() => {
     let interval;
@@ -37,7 +45,7 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
           const fakeResult = {};
           const mode = settings.tiebreakerMode || 'coin';
           roomState.tiebreaker.tiedPlayers.forEach(id => {
-            fakeResult[id] = mode === 'coin' ? (Math.random() < 0.5 ? 'H' : 'T') : ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
+            fakeResult[id] = mode === 'coin' ? (Math.random() < 0.5 ? 'H' : 'T') : ['✊', '✋', '✌️'][Math.floor(Math.random() * 3)];
           });
           setTiebreakerSpinResult(fakeResult);
         }
@@ -334,7 +342,10 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                   
                   if (resultStr && !isTiebreakerAction) {
                     if (settings.tiebreakerMode === 'rps') {
-                      if (resultStr === 'READY') displayVal = '⏳';
+                      if (resultStr === 'READY') {
+                        // Show what we locally picked if it's our own circle, otherwise spinner
+                        displayVal = (pId === socket.id && myTiebreakerPick) ? myTiebreakerPick : '⏳';
+                      }
                       else if (resultStr === 'rock') displayVal = '✊';
                       else if (resultStr === 'paper') displayVal = '✋';
                       else if (resultStr === 'scissors') displayVal = '✌️';
@@ -420,26 +431,35 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                     </>
                   ) : (
                     <>
-                      <button 
-                        onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'rock' })}
+                      <button
+                        onClick={() => {
+                          setMyTiebreakerPick('✊');
+                          socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'rock' });
+                        }}
                         disabled={isTiebreakerAction}
-                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-lg md:text-xl py-2 md:py-3 px-4 md:px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl active:scale-95 transition shadow-lg shadow-indigo-500/30 flex items-center gap-2 disabled:opacity-50"
                       >
-                        ✊ ROCK
+                        <span className="text-xl">✊</span> ROCK
                       </button>
-                      <button 
-                        onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'paper' })}
+                      <button
+                        onClick={() => {
+                          setMyTiebreakerPick('✋');
+                          socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'paper' });
+                        }}
                         disabled={isTiebreakerAction}
-                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-lg md:text-xl py-2 md:py-3 px-4 md:px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl active:scale-95 transition shadow-lg shadow-indigo-500/30 flex items-center gap-2 disabled:opacity-50"
                       >
-                        ✋ PAPER
+                        <span className="text-xl">✋</span> PAPER
                       </button>
-                      <button 
-                        onClick={() => socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'scissors' })}
+                      <button
+                        onClick={() => {
+                          setMyTiebreakerPick('✌️');
+                          socket.emit('playTiebreaker', { roomId: roomState.id, choice: 'scissors' });
+                        }}
                         disabled={isTiebreakerAction}
-                        className="bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/50 text-slate-900 font-black text-lg md:text-xl py-2 md:py-3 px-4 md:px-6 rounded-2xl transition-all active:scale-95 shadow-lg disabled:opacity-50"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl active:scale-95 transition shadow-lg shadow-indigo-500/30 flex items-center gap-2 disabled:opacity-50"
                       >
-                        ✌️ SCISSORS
+                        <span className="text-xl">✌️</span> SCISSORS
                       </button>
                     </>
                   )}
