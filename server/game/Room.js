@@ -152,6 +152,15 @@ class Room {
     return true;
   }
 
+  unreadyPlacement(socketId) {
+    if (this.state !== 'SETUP' && (this.state !== 'PLAYING' || this.history.length > 0)) return false;
+    if (!this.players[socketId]) return false;
+    
+    this.players[socketId].ready = false;
+    this.state = 'SETUP'; // Fallback to setup mode
+    return true;
+  }
+
   _checkReady() {
     if (this.state !== 'SETUP') return;
     const allReady = Object.values(this.players).every(p => p.ready);

@@ -100,7 +100,18 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 transition-colors flex flex-col">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-slate-200 dark:border-slate-700 pb-4">
-            <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Game Board</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Game Board</h2>
+              {roomState.history.length === 0 && !isRollingGlobal && (
+                <button
+                  onClick={() => socket.emit('unreadyPlacement', { roomId: roomState.id })}
+                  className="text-xs font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors shadow-sm"
+                  title="Return to setup phase to change your piece placement"
+                >
+                  Edit Board
+                </button>
+              )}
+            </div>
             {!gameOver && !isTiebreaker && (
               <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                 {(roomState.host === socket.id) ? (

@@ -8,6 +8,9 @@ export default function Setup({ roomState, socket }) {
   
   const me = roomState.players[socket.id];
   const [placement, setPlacement] = useState(() => {
+    if (me?.pieces && Object.keys(me.pieces).length > 0) {
+      return { ...me.pieces };
+    }
     const initial = {};
     for (let i = minSum; i <= maxSum; i++) {
       initial[i] = 0;
@@ -87,10 +90,19 @@ export default function Setup({ roomState, socket }) {
           </div>
         </div>
 
-        <div className="flex justify-center space-x-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex justify-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+          </div>
+          
+          <button
+            onClick={() => socket.emit('unreadyPlacement', { roomId: roomState.id })}
+            className="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl shadow-sm transition-colors active:scale-95"
+          >
+            Edit Board
+          </button>
         </div>
       </div>
     );
