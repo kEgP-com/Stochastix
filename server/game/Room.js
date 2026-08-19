@@ -396,6 +396,20 @@ class Room {
   }
 
   getState() {
+    // Deep clone tiebreaker to mask RPS choices if round is incomplete
+    let safeTiebreaker = this.tiebreaker;
+    if (this.tiebreaker && this.settings.tiebreakerMode === 'rps') {
+      const isRoundIncomplete = Object.keys(this.tiebreaker.currentFlips).length < this.tiebreaker.tiedPlayers.length;
+      if (isRoundIncomplete) {
+        safeTiebreaker = {
+          ...this.tiebreaker,
+          currentFlips: Object.fromEntries(
+            Object.entries(this.tiebreaker.currentFlips).map(([id, val]) => [id, val ? 'READY' : val])
+          )
+        };
+      }
+    }
+
     return {
       id: this.id,
       players: this.players,
@@ -405,7 +419,7 @@ class Room {
       history: this.history,
       isSinglePlayer: this.isSinglePlayer,
       finalWinner: this.finalWinner,
-      tiebreaker: this.tiebreaker
+      tiebreaker: safeTiebreaker
     };
   }
 }
