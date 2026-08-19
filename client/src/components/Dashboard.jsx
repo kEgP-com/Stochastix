@@ -23,15 +23,45 @@ export default function Dashboard({ socket, currentUser }) {
     };
   }, [socket]);
 
-  // Global 2d6 chart data
+  const availableConfigs = useMemo(() => {
+    const configs = new Set();
+    history.forEach(g => {
+      const dCount = g.settings?.diceCount || 2;
+      const dSides = g.settings?.diceSides || 6;
+      configs.add(`${dCount}d${dSides}`);
+    });
+    return Array.from(configs).sort();
+  }, [history]);
+
+  const [chartConfig, setChartConfig] = useState('2d6');
+
+  useEffect(() => {
+    if (availableConfigs.length > 0 && !availableConfigs.includes(chartConfig)) {
+      setChartConfig(availableConfigs.includes('2d6') ? '2d6' : availableConfigs[0]);
+    }
+  }, [availableConfigs, chartConfig]);
+
+  // Dynamic chart data
   const chartData = useMemo(() => {
-    const games2d6 = history.filter(g => g.settings.diceCount === 2 && g.settings.diceSides === 6);
-    if (games2d6.length === 0) return [];
+    if (!chartConfig) return [];
+    
+    const [c, s] = chartConfig.split('d').map(Number);
+    const diceCount = c || 2;
+    const diceSides = s || 6;
+
+    const filteredGames = history.filter(g => {
+      const gC = g.settings?.diceCount || 2;
+      const gS = g.settings?.diceSides || 6;
+      return gC === diceCount && gS === diceSides;
+    });
+
+    if (filteredGames.length === 0) return [];
 
     let totalRolls = 0;
-    const frequencies = {2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0};
+    const frequencies = {};
+    for (let i = diceCount; i <= diceCount * diceSides; i++) frequencies[i] = 0;
     
-    games2d6.forEach(g => {
+    filteredGames.forEach(g => {
       g.rolls.forEach(r => {
         if (frequencies[r] !== undefined) {
           frequencies[r]++;
@@ -41,13 +71,13 @@ export default function Dashboard({ socket, currentUser }) {
     });
 
     const displayBase = Math.max(totalRolls, 10);
-    const pmf = calculatePMF(2, 6);
+    const pmf = calculatePMF(diceCount, diceSides);
     return pmf.map(p => ({
       sum: p.sum,
       expected: parseFloat((p.probability * displayBase).toFixed(1)),
       actual: frequencies[p.sum] || 0
     }));
-  }, [history]);
+  }, [history, chartConfig]);
 
   // Tiebreaker analytics
   const tiebreakerStats = useMemo(() => {
@@ -244,7 +274,20 @@ export default function Dashboard({ socket, currentUser }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 h-full transition-colors">
-              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-6">Theoretical vs. Actual Rolls (Global 2d6)</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Theoretical vs. Actual Rolls</h3>
+                {availableConfigs.length > 0 && (
+                  <select 
+                    value={chartConfig} 
+                    onChange={(e) => setChartConfig(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-1.5 outline-none font-semibold cursor-pointer"
+                  >
+                    {availableConfigs.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               {chartData.length > 0 ? (
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
