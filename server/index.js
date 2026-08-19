@@ -19,56 +19,22 @@ const io = new Server(server, {
 
 const rooms = {};
 
-const sqlite3 = require('sqlite3').verbose();
-
-const dbPath = path.join(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbPath);
-
-let globalHistory = [];
+const usersPath = path.join(__dirname, 'users.json');
 let globalUsers = {};
-
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, points INTEGER DEFAULT 1000, password TEXT)`);
-  db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, data TEXT)`);
-  
-  // Load data into memory on boot
-  db.all(`SELECT * FROM users`, [], (err, rows) => {
-    if (!err && rows) {
-      rows.forEach(r => globalUsers[r.username] = { points: r.points, password: r.password });
-    }
-  });
-  
-  db.all(`SELECT * FROM history`, [], (err, rows) => {
-    if (!err && rows) {
-      globalHistory = rows.map(r => JSON.parse(r.data));
-    }
-  });
-});
-
+if (fs.existsSync(usersPath)) {
+  globalUsers = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+}
 const saveUsers = () => {
-  db.serialize(() => {
-    db.run("BEGIN TRANSACTION");
-    const stmt = db.prepare("INSERT OR REPLACE INTO users (username, points, password) VALUES (?, ?, ?)");
-    for (const [username, data] of Object.entries(globalUsers)) {
-      stmt.run(username, data.points, data.password || null);
-    }
-    stmt.finalize();
-    db.run("COMMIT");
-  });
+  fs.writeFileSync(usersPath, JSON.stringify(globalUsers, null, 2));
 };
 
+const historyPath = path.join(__dirname, 'history.json');
+let globalHistory = [];
+if (fs.existsSync(historyPath)) {
+  globalHistory = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+}
 const saveHistory = () => {
-  db.serialize(() => {
-    db.run("BEGIN TRANSACTION");
-    const stmt = db.prepare("INSERT OR REPLACE INTO history (id, data) VALUES (?, ?)");
-    for (const entry of globalHistory) {
-      if (entry && entry.id) {
-        stmt.run(entry.id, JSON.stringify(entry));
-      }
-    }
-    stmt.finalize();
-    db.run("COMMIT");
-  });
+  fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
 };
 
 const handleAuth = (username, socket, password) => {
