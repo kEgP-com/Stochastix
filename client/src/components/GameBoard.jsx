@@ -319,15 +319,6 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               exit={{ scale: 0.9, y: 20 }}
               className="bg-slate-800 rounded-3xl p-8 max-w-3xl w-full text-center border-2 border-amber-500 shadow-2xl shadow-amber-500/20 relative"
             >
-              {roomState.host === socket.id && (
-                <button 
-                  onClick={() => socket.emit('resetToLobby', { roomId: roomState.id })}
-                  className="absolute top-4 right-4 text-slate-400 hover:text-white transition p-2 bg-slate-700 hover:bg-slate-600 rounded-full"
-                  title="Return to Lobby"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              )}
               <h2 className="text-4xl font-black text-amber-500 mb-2 mt-2">
                 {settings.tiebreakerMode === 'rps' ? 'ROCK, PAPER, SCISSORS!' : 'COIN FLIP TIEBREAKER!'}
               </h2>

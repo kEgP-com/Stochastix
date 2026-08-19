@@ -296,25 +296,6 @@ let passwordResetCodes = {};
     }
   });
 
-  socket.on('forceTiebreakerDebug', ({ roomId }) => {
-    const room = rooms[roomId];
-    if (room && room.host === socket.id) {
-      if (Object.keys(room.players).length === 1) {
-        room.addPlayer('ai-' + Math.random().toString(36).substr(2, 5), 'AI Opponent', true);
-      }
-      room.isDebugMatch = true;
-      room.state = 'TIEBREAKER';
-      room.tiebreaker = {
-        tiedPlayers: Object.keys(room.players),
-        scores: Object.keys(room.players).reduce((acc, p) => ({...acc, [p]: 0}), {}),
-        flips: [],
-        currentFlips: {},
-        round: 1
-      };
-      io.to(roomId).emit('roomState', room.getState());
-    }
-  });
-
   socket.on('resetToLobby', ({ roomId }) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {
