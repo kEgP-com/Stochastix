@@ -108,6 +108,13 @@ function App() {
       localStorage.setItem('currentUser', JSON.stringify(data));
     });
 
+    socket.on('registerSuccess', () => {
+      setError('Registration successful! Please log in.');
+      setIsLoginMode(true);
+      setPassword('');
+      setConfirmPassword('');
+    });
+
     socket.on('error', (msg) => {
       setError(msg);
     });
@@ -130,6 +137,7 @@ function App() {
       socket.off('error');
       socket.off('disconnect');
       socket.off('profileUpdated');
+      socket.off('registerSuccess');
     };
   }, []);
 

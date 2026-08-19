@@ -143,7 +143,17 @@ io.on('connection', (socket) => {
     if (globalUsers[username]) {
       return socket.emit('error', 'Username already exists');
     }
-    handleAuth(username, socket, password, email);
+    
+    // Ensure email is unique across all users
+    const emailExists = Object.values(globalUsers).some(u => u.email === email);
+    if (emailExists) {
+      return socket.emit('error', 'Email already in use');
+    }
+
+    globalUsers[username] = { points: 1000, password: password, email: email };
+    await saveUsers();
+    
+    socket.emit('registerSuccess');
   });
 
   socket.on('login', async ({ username, password }) => {
