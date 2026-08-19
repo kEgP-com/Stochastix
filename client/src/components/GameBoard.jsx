@@ -89,6 +89,10 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
   const me = roomState.players[socket.id];
   const opponents = Object.entries(roomState.players).filter(([id]) => id !== socket.id);
 
+  const otherHumans = Object.values(roomState.players).filter(p => !p.isAI && p.name !== me?.name);
+  const otherHumansReadyCount = otherHumans.filter(p => p.readyToRoll).length;
+  const allOtherHumansReady = otherHumans.length === 0 || otherHumansReadyCount === otherHumans.length;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
       
@@ -99,24 +103,46 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
             <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Game Board</h2>
             {!gameOver && !isTiebreaker && (
               <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                {(roomState.host === socket.id) && (
+                {(roomState.host === socket.id) ? (
+                  <>
+                    <button
+                      onClick={() => setAutoRoll(!autoRoll)}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 ease-in-out active:scale-95 border ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
+                    >
+                      <div className={`w-8 h-4 rounded-full flex items-center p-[2px] transition-colors duration-300 ease-in-out ${autoRoll ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                        <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-in-out ${autoRoll ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="whitespace-nowrap">Auto-Roll</span>
+                    </button>
+                    <button
+                      onClick={() => socket.emit('hostForceRoll', { roomId: roomState.id })}
+                      disabled={isRollingGlobal}
+                      className={`text-white font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none active:scale-95 ${
+                        isRollingGlobal 
+                          ? 'opacity-50 cursor-not-allowed bg-slate-500' 
+                          : allOtherHumansReady
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-purple-500/50 hover:-translate-y-0.5'
+                            : 'bg-slate-400 dark:bg-slate-600 hover:bg-slate-500'
+                      }`}
+                    >
+                      {isRollingGlobal ? 'Rolling...' : (allOtherHumansReady ? 'Roll Dice' : `Force Roll (${otherHumansReadyCount}/${otherHumans.length})`)}
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => setAutoRoll(!autoRoll)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 ease-in-out active:scale-95 border ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
+                    onClick={() => socket.emit('toggleReadyToRoll', { roomId: roomState.id })}
+                    disabled={isRollingGlobal}
+                    className={`font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg active:scale-95 transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none ${
+                      isRollingGlobal 
+                        ? 'opacity-50 cursor-not-allowed bg-slate-500 text-white' 
+                        : me?.readyToRoll 
+                          ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30' 
+                          : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                    }`}
                   >
-                    <div className={`w-8 h-4 rounded-full flex items-center p-[2px] transition-colors duration-300 ease-in-out ${autoRoll ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                      <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-in-out ${autoRoll ? 'translate-x-4' : 'translate-x-0'}`} />
-                    </div>
-                    <span className="whitespace-nowrap">Auto-Roll</span>
+                    {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? '✔ READY' : 'Click to Ready')}
                   </button>
                 )}
-                <button
-                  onClick={readyToRoll}
-                  disabled={isRollingGlobal || me?.readyToRoll}
-                  className={`bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none ${(isRollingGlobal || me?.readyToRoll) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? 'Waiting...' : 'Ready To Roll')}
-                </button>
               </div>
             )}
           </div>

@@ -358,34 +358,11 @@ let passwordResetCodes = {};
     }
   });
 
-  socket.on('readyToRoll', ({ roomId }) => {
+  socket.on('toggleReadyToRoll', ({ roomId }) => {
     const room = rooms[roomId];
-    if (room) {
-      const result = room.setReadyToRoll(socket.id);
-      if (result && result.rolled) {
-        io.to(roomId).emit('diceRolled', result);
-        io.to(roomId).emit('roomState', room);
-
-        if (room.state === 'GAMEOVER') {
-          processGameOverPoints(room);
-          const newEntry = {
-            id: room.id,
-            timestamp: Date.now(),
-            settings: room.settings,
-            players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
-            winner: room.players[room.finalWinner]?.name || 'Unknown',
-            totalRolls: room.history.length,
-            rolls: [...room.history],
-            tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
-          };
-          globalHistory.push(newEntry);
-          saveHistory(newEntry);
-          io.emit('historyData', globalHistory);
-          io.to(roomId).emit('roomState', room);
-        }
-      } else if (result) {
-        io.to(roomId).emit('roomState', room);
-      }
+    if (room && room.state === 'PLAYING' && room.players[socket.id]) {
+      room.players[socket.id].readyToRoll = !room.players[socket.id].readyToRoll;
+      io.to(roomId).emit('roomState', room);
     }
   });
 
