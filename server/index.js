@@ -311,6 +311,18 @@ let passwordResetCodes = {};
     }
   });
 
+  socket.on('resetToLobby', ({ roomId }) => {
+    const room = rooms[roomId];
+    if (room && room.host === socket.id) {
+      room.state = 'LOBBY';
+      // Unready everyone
+      for (const p of Object.values(room.players)) {
+        p.lobbyReady = false;
+      }
+      io.to(roomId).emit('roomState', room.getState());
+    }
+  });
+
   socket.on('leaveRoom', ({ roomId }) => {
     const room = rooms[roomId];
     if (room) {
