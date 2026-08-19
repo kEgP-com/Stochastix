@@ -89,9 +89,9 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
   const me = roomState.players[socket.id];
   const opponents = Object.entries(roomState.players).filter(([id]) => id !== socket.id);
 
-  const otherHumans = Object.values(roomState.players).filter(p => !p.isAI && p.name !== me?.name);
-  const otherHumansReadyCount = otherHumans.filter(p => p.readyToRoll).length;
-  const allOtherHumansReady = otherHumans.length === 0 || otherHumansReadyCount === otherHumans.length;
+  const allHumans = Object.values(roomState.players).filter(p => !p.isAI && !p.disconnected);
+  const humanReadyCount = allHumans.filter(p => p.readyToRoll).length;
+  const allHumansReady = allHumans.length === 0 || humanReadyCount === allHumans.length;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
@@ -113,8 +113,24 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               )}
             </div>
             {!gameOver && !isTiebreaker && (
-              <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                {(roomState.host === socket.id) ? (
+              <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                {roomState.history.length === 0 && (
+                  <button
+                    onClick={() => socket.emit('toggleReadyToRoll', { roomId: roomState.id })}
+                    disabled={isRollingGlobal}
+                    className={`font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg active:scale-95 transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none ${
+                      isRollingGlobal 
+                        ? 'opacity-50 cursor-not-allowed bg-slate-500 text-white' 
+                        : me?.readyToRoll 
+                          ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30' 
+                          : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                    }`}
+                  >
+                    {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? '✔ READY' : 'Click to Ready')}
+                  </button>
+                )}
+
+                {(roomState.host === socket.id) && (
                   <>
                     <button
                       onClick={() => setAutoRoll(!autoRoll)}
@@ -131,28 +147,14 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                       className={`text-white font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none active:scale-95 ${
                         isRollingGlobal 
                           ? 'opacity-50 cursor-not-allowed bg-slate-500' 
-                          : allOtherHumansReady
-                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-purple-500/50 hover:-translate-y-0.5'
-                            : 'bg-slate-400 dark:bg-slate-600 hover:bg-slate-500'
+                          : roomState.history.length === 0 && !allHumansReady
+                            ? 'bg-slate-400 dark:bg-slate-600 hover:bg-slate-500'
+                            : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-purple-500/50 hover:-translate-y-0.5'
                       }`}
                     >
-                      {isRollingGlobal ? 'Rolling...' : (allOtherHumansReady ? 'Roll Dice' : `Force Roll (${otherHumansReadyCount}/${otherHumans.length})`)}
+                      {isRollingGlobal ? 'Rolling...' : (roomState.history.length === 0 && !allHumansReady ? `Force Roll (${humanReadyCount}/${allHumans.length})` : 'Roll Dice')}
                     </button>
                   </>
-                ) : (
-                  <button
-                    onClick={() => socket.emit('toggleReadyToRoll', { roomId: roomState.id })}
-                    disabled={isRollingGlobal}
-                    className={`font-bold py-3 px-6 sm:px-8 rounded-xl shadow-lg active:scale-95 transition-all duration-300 ease-in-out whitespace-nowrap flex-1 sm:flex-none ${
-                      isRollingGlobal 
-                        ? 'opacity-50 cursor-not-allowed bg-slate-500 text-white' 
-                        : me?.readyToRoll 
-                          ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30' 
-                          : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-                    }`}
-                  >
-                    {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? '✔ READY' : 'Click to Ready')}
-                  </button>
                 )}
               </div>
             )}
@@ -174,10 +176,16 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                     </div>
                     {roomState.state === 'PLAYING' && (
                       <div>
-                        {player.readyToRoll ? (
-                          <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold">Ready</span>
+                        {roomState.history.length === 0 ? (
+                          player.readyToRoll ? (
+                            <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold">Ready</span>
+                          ) : (
+                            <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold">Thinking</span>
+                          )
+                        ) : player.disconnected ? (
+                          <span className="text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold">Disconnected</span>
                         ) : (
-                          <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold">Thinking</span>
+                          <span className="text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded text-[10px] uppercase tracking-wider font-bold">Connected</span>
                         )}
                       </div>
                     )}

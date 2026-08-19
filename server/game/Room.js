@@ -35,9 +35,16 @@ class Room {
   }
 
   removePlayer(socketId) {
-    delete this.players[socketId];
+    if (this.state === 'PLAYING' || this.state === 'GAMEOVER') {
+      if (this.players[socketId]) {
+        this.players[socketId].disconnected = true;
+      }
+    } else {
+      delete this.players[socketId];
+    }
+    
     if (this.host === socketId) {
-      const remaining = Object.keys(this.players);
+      const remaining = Object.keys(this.players).filter(id => !this.players[id].disconnected);
       if (remaining.length > 0) {
         // Prefer human host
         const human = remaining.find(id => !this.players[id].isAI);

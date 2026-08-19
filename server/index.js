@@ -412,7 +412,8 @@ let passwordResetCodes = {};
       const room = rooms[roomId];
       if (room.players[socket.id]) {
         room.removePlayer(socket.id);
-        if (Object.keys(room.players).length === 0) {
+        const hasActivePlayers = Object.values(room.players).some(p => !p.disconnected && !p.isAI);
+        if (!hasActivePlayers) {
           delete rooms[roomId];
         } else {
           io.to(roomId).emit('roomState', room);
