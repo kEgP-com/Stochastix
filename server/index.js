@@ -19,31 +19,79 @@ const io = new Server(server, {
 
 const rooms = {};
 
-const usersPath = path.join(__dirname, 'users.json');
+require('dotenv').config();
+const mongoose = require('mongoose');
+const User = require('./models/User');
+const History = require('./models/History');
+
 let globalUsers = {};
-if (fs.existsSync(usersPath)) {
-  globalUsers = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-}
-const saveUsers = () => {
-  fs.writeFileSync(usersPath, JSON.stringify(globalUsers, null, 2));
-};
-
-const historyPath = path.join(__dirname, 'history.json');
 let globalHistory = [];
-if (fs.existsSync(historyPath)) {
-  globalHistory = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
-}
-const saveHistory = () => {
-  fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
+
+const usersPath = path.join(__dirname, 'users.json');
+const historyPath = path.join(__dirname, 'history.json');
+
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGO_URI) {
+      console.log('No MONGO_URI found. Falling back to JSON files.');
+      if (fs.existsSync(usersPath)) {
+        globalUsers = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+      }
+      if (fs.existsSync(historyPath)) {
+        globalHistory = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+      }
+      return;
+    }
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('MongoDB connected successfully');
+    
+    // Load into memory for synchronous gameplay
+    const users = await User.find();
+    users.forEach(u => {
+      globalUsers[u.username] = { points: u.points, password: u.password };
+    });
+    
+    globalHistory = await History.find().lean();
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+  }
+};
+connectDB();
+
+const saveUsers = async () => {
+  if (!process.env.MONGO_URI) {
+    fs.writeFileSync(usersPath, JSON.stringify(globalUsers, null, 2));
+    return;
+  }
+  for (const [username, data] of Object.entries(globalUsers)) {
+    await User.findOneAndUpdate(
+      { username },
+      { points: data.points, password: data.password || null },
+      { upsert: true }
+    ).catch(console.error);
+  }
 };
 
-const handleAuth = (username, socket, password) => {
+const saveHistory = async (newEntry) => {
+  if (!process.env.MONGO_URI) {
+    fs.writeFileSync(historyPath, JSON.stringify(globalHistory, null, 2));
+    return;
+  }
+  try {
+    const entry = new History(newEntry);
+    await entry.save();
+  } catch (err) {
+    console.error('Failed to save history entry', err);
+  }
+};
+
+const handleAuth = async (username, socket, password) => {
   if (!globalUsers[username]) {
     globalUsers[username] = { points: 1000, password: password || null };
-    saveUsers();
+    await saveUsers();
   } else if (!globalUsers[username].password && password) {
     globalUsers[username].password = password;
-    saveUsers();
+    await saveUsers();
   }
   socket.emit('authSuccess', { username, points: globalUsers[username].points });
 };
@@ -210,7 +258,7 @@ io.on('connection', (socket) => {
 
         if (room.state === 'GAMEOVER') {
           processGameOverPoints(room);
-          globalHistory.push({
+          const newEntry = {
             id: room.id,
             timestamp: Date.now(),
             settings: room.settings,
@@ -219,8 +267,9 @@ io.on('connection', (socket) => {
             totalRolls: room.history.length,
             rolls: [...room.history],
             tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
-          });
-          saveHistory();
+          };
+          globalHistory.push(newEntry);
+          saveHistory(newEntry);
           io.emit('historyData', globalHistory);
         }
       }
@@ -237,7 +286,7 @@ io.on('connection', (socket) => {
 
         if (room.state === 'GAMEOVER') {
           processGameOverPoints(room);
-          globalHistory.push({
+          const newEntry = {
             id: room.id,
             timestamp: Date.now(),
             settings: room.settings,
@@ -246,8 +295,10 @@ io.on('connection', (socket) => {
             totalRolls: room.history.length,
             rolls: [...room.history],
             tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
-          });
-          saveHistory();
+          };
+          globalHistory.push(newEntry);
+          saveHistory(newEntry);
+          io.emit('historyData', globalHistory);
           io.to(roomId).emit('roomState', room);
         }
       } else if (result) {
@@ -266,7 +317,7 @@ io.on('connection', (socket) => {
           setTimeout(() => {
             if (room.state === 'GAMEOVER') {
               processGameOverPoints(room);
-              globalHistory.push({
+              const newEntry = {
                 id: room.id,
                 timestamp: Date.now(),
                 settings: room.settings,
@@ -275,8 +326,9 @@ io.on('connection', (socket) => {
                 totalRolls: room.history.length,
                 rolls: [...room.history],
                 tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
-              });
-              saveHistory();
+              };
+              globalHistory.push(newEntry);
+              saveHistory(newEntry);
               io.emit('historyData', globalHistory);
             }
             io.to(roomId).emit('roomState', room.getState());
