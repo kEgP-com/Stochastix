@@ -140,14 +140,14 @@ io.on('connection', (socket) => {
 
   socket.on('register', async ({ email, username, password }) => {
     console.log('Register attempt:', username);
-    if (globalUsers[username]) {
-      return socket.emit('error', 'Username already exists');
-    }
-    
     // Ensure email is unique across all users
     const emailExists = Object.values(globalUsers).some(u => u.email === email);
     if (emailExists) {
       return socket.emit('error', 'Email already in use');
+    }
+
+    if (globalUsers[username]) {
+      return socket.emit('error', 'Username already exists');
     }
 
     globalUsers[username] = { points: 1000, password: password, email: email };
