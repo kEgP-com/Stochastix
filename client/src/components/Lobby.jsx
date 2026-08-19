@@ -133,16 +133,16 @@ export default function Lobby({ roomState, socket }) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">AI Difficulty</label>
+              <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">AI Placement</label>
               <select
                 disabled={!isHost}
-                value={roomState.settings.aiDifficulty || 'Medium'}
+                value={roomState.settings.aiDifficulty || 'Mixed'}
                 onChange={(e) => handleSettingsChange('aiDifficulty', e.target.value)}
                 className="w-full border border-slate-200 dark:border-slate-600 rounded-lg p-2 disabled:bg-slate-50 disabled:dark:bg-slate-800 bg-white dark:bg-slate-700 text-slate-800 dark:text-white transition-colors focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                <option value="Easy">Easy (Random Placement)</option>
-                <option value="Medium">Medium (Mixed Placement)</option>
-                <option value="Hard">Hard (Optimal Placement)</option>
+                <option value="Random">Random</option>
+                <option value="Mixed">Mixed</option>
+                <option value="Optimal">Optimal</option>
               </select>
             </div>
             

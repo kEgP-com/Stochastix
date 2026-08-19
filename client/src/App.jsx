@@ -261,9 +261,9 @@ function App() {
           <div className="flex items-center gap-4">
             {currentUser && (
               <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3">
-                <span className="flex items-center gap-2">
-                  <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
-                  <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700 whitespace-nowrap">
+                <span className="flex items-center gap-4">
+                  <span className="font-bold text-slate-800 dark:text-slate-100">Hello, {currentUser.username}</span>
+                  <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700 whitespace-nowrap mr-2">
                     💰 {currentUser.points || 1000}
                   </span>
                 </span>
@@ -329,9 +329,9 @@ function App() {
 
           {currentUser && (
             <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800 dark:text-slate-100">{currentUser.username}</span>
-                <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 dark:border-yellow-700">
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-slate-800 dark:text-slate-100">Hello, {currentUser.username}</span>
+                <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 dark:border-yellow-700 mr-2">
                   💰 {currentUser.points || 1000}
                 </span>
               </div>

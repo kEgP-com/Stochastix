@@ -80,14 +80,14 @@ class Room {
     for (let i = diceCount; i <= diceCount * diceSides; i++) placement[i] = 0;
 
     // AI Difficulty weights
-    const difficulty = this.settings.aiDifficulty || 'Medium';
+    const difficulty = this.settings.aiDifficulty || 'Mixed';
     let mathWeight = 0.6;
     let randomWeight = 0.4;
     
-    if (difficulty === 'Easy') {
+    if (difficulty === 'Random') {
       mathWeight = 0.0;
       randomWeight = 1.0;
-    } else if (difficulty === 'Hard') {
+    } else if (difficulty === 'Optimal') {
       mathWeight = 1.0;
       randomWeight = 0.0;
     }
