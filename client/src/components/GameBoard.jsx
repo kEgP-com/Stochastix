@@ -122,11 +122,11 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                       isRollingGlobal 
                         ? 'opacity-50 cursor-not-allowed bg-slate-500 text-white' 
                         : me?.readyToRoll 
-                          ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30' 
-                          : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30' 
+                          : 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30'
                     }`}
                   >
-                    {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? '✔ READY' : 'Click to Ready')}
+                    {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? 'Cancel Ready' : 'Click to Ready')}
                   </button>
                 )}
 
@@ -319,7 +319,7 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               <div className="flex justify-center flex-wrap gap-12 mb-12">
                 {tiebreaker.tiedPlayers.map(pId => {
                   const resultStr = tiebreaker.currentFlips[pId];
-                  let displayVal = settings.tiebreakerMode === 'rps' ? '✊' : '🪙';
+                  let displayVal = settings.tiebreakerMode === 'rps' ? '❓' : '🪙';
                   let choiceVal = '';
                   let landedVal = '';
                   
