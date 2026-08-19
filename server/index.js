@@ -284,6 +284,33 @@ let passwordResetCodes = {};
     }
   });
 
+  socket.on('startGame', ({ roomId }) => {
+    const room = rooms[roomId];
+    if (room && room.host === socket.id) {
+      const allHumansReady = Object.values(room.players).filter(p => !p.isAI).every(p => p.lobbyReady);
+      if (allHumansReady) {
+        room.state = 'SETUP';
+        room.startSetupPhase();
+        io.to(roomId).emit('roomState', room.getState());
+      }
+    }
+  });
+
+  socket.on('forceTiebreakerDebug', ({ roomId }) => {
+    const room = rooms[roomId];
+    if (room && room.host === socket.id) {
+      room.state = 'TIEBREAKER';
+      room.tiebreaker = {
+        tiedPlayers: Object.keys(room.players),
+        scores: Object.keys(room.players).reduce((acc, p) => ({...acc, [p]: 0}), {}),
+        flips: [],
+        currentFlips: {},
+        round: 1
+      };
+      io.to(roomId).emit('roomState', room.getState());
+    }
+  });
+
   socket.on('leaveRoom', ({ roomId }) => {
     const room = rooms[roomId];
     if (room) {

@@ -183,13 +183,21 @@ export default function Lobby({ roomState, socket }) {
         </button>
         
         {isHost && (
-          <button 
-            onClick={() => socket.emit('startGame', { roomId: roomState.id })}
-            disabled={!Object.values(roomState.players).filter(p => !p.isAI).every(p => p.lobbyReady)}
-            className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl active:scale-95 transition shadow-lg shadow-blue-500/30 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-          >
-            Start Game
-          </button>
+          <>
+            <button 
+              onClick={() => socket.emit('forceTiebreakerDebug', { roomId: roomState.id })}
+              className="bg-purple-600 dark:bg-purple-500 hover:bg-purple-700 dark:bg-purple-600 text-white font-bold py-3 px-8 rounded-xl active:scale-95 transition shadow-lg shadow-purple-500/30 w-full sm:w-auto"
+            >
+              Test Tiebreaker
+            </button>
+            <button 
+              onClick={() => socket.emit('startGame', { roomId: roomState.id })}
+              disabled={!Object.values(roomState.players).filter(p => !p.isAI).every(p => p.lobbyReady)}
+              className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl active:scale-95 transition shadow-lg shadow-blue-500/30 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              Start Game
+            </button>
+          </>
         )}
       </div>
     </div>
