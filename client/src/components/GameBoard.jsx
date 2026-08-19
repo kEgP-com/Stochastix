@@ -334,7 +334,7 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               <p className="text-slate-300 font-bold text-xl mb-12">Round {tiebreaker.round}</p>
               
               <div className="flex justify-center flex-wrap gap-12 mb-12">
-                {tiebreaker.tiedPlayers.map(pId => {
+                {tiebreaker.tiedPlayers.map((pId, index) => {
                   const resultStr = tiebreaker.currentFlips[pId];
                   let displayVal = settings.tiebreakerMode === 'rps' ? '❓' : '🪙';
                   let choiceVal = '';
@@ -371,7 +371,13 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                   }
 
                   return (
-                    <div key={pId} className="flex flex-col items-center">
+                    <React.Fragment key={pId}>
+                      {index > 0 && (
+                        <div className="flex items-center justify-center">
+                          <span className="text-4xl font-black text-slate-500/50 hidden sm:block">VS</span>
+                        </div>
+                      )}
+                      <div className="flex flex-col items-center">
                       <div className="text-xl font-bold text-white mb-6">
                         {roomState.players[pId].name} {pId === socket.id && '(You)'}
                       </div>
@@ -412,6 +418,7 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                         Score: {tiebreaker.scores[pId] || 0}
                       </div>
                     </div>
+                    </React.Fragment>
                   );
                 })}
               </div>
