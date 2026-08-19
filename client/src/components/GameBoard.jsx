@@ -499,13 +499,19 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               {tiebreaker && (
                 <div className="mt-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 text-left border border-slate-200 dark:border-slate-700 shadow-inner">
                   <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex items-center gap-2">
-                    <span className="text-xl">{settings.tiebreakerMode === 'roll' ? '🎲' : '🪙'}</span> 
-                    {settings.tiebreakerMode === 'roll' ? 'Tiebreaker Highest Roll' : 'Tiebreaker Coin Flip'}
+                    <span className="text-xl">
+                      {settings.tiebreakerMode === 'roll' ? '🎲' : settings.tiebreakerMode === 'rps' ? '✌️' : '🪙'}
+                    </span> 
+                    {settings.tiebreakerMode === 'roll' 
+                      ? 'Tiebreaker Highest Roll' 
+                      : settings.tiebreakerMode === 'rps' 
+                        ? 'Tiebreaker Rock Paper Scissors' 
+                        : 'Tiebreaker Coin Flip'}
                   </h3>
                   <div className="space-y-4 max-h-[160px] overflow-y-auto custom-scrollbar">
                     <div className="flex gap-4 mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                       <div className="w-1/3">Player</div>
-                      <div className="w-1/3 text-center">{settings.tiebreakerMode === 'roll' ? 'Rolls' : 'Flips'}</div>
+                      <div className="w-1/3 text-center">{settings.tiebreakerMode === 'roll' ? 'Rolls' : settings.tiebreakerMode === 'rps' ? 'Moves' : 'Flips'}</div>
                       <div className="w-1/3 text-right">{settings.tiebreakerMode === 'roll' ? 'Final Roll' : 'Wins'}</div>
                     </div>
                     {tiebreaker.tiedPlayers.map(pId => (
@@ -513,15 +519,29 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                         <div className="w-1/3 font-bold text-slate-700 dark:text-slate-300">
                           {roomState.players[pId].name}
                         </div>
-                        <div className="w-1/3 flex justify-center gap-1 font-mono">
-                          {tiebreaker.flips.map((f, i) => (
-                            <span key={i} className={`${settings.tiebreakerMode === 'roll' ? 'text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30' : (f[pId] === 'H' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' : 'text-red-500 bg-red-100 dark:bg-red-900/30')} px-2 py-0.5 rounded text-xs`}>
-                              {f[pId] || '-'}
-                            </span>
-                          ))}
+                        <div className="w-1/3 flex justify-center flex-wrap gap-1 font-mono">
+                          {tiebreaker.flips.map((f, i) => {
+                            let result = f[pId];
+                            if (settings.tiebreakerMode === 'rps' && result) {
+                              if (result === 'rock') result = '✊';
+                              else if (result === 'paper') result = '✋';
+                              else if (result === 'scissors') result = '✌️';
+                            }
+                            return (
+                              <span key={i} className={`${
+                                settings.tiebreakerMode === 'roll' 
+                                  ? 'text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30' 
+                                  : settings.tiebreakerMode === 'rps'
+                                    ? 'text-slate-700 bg-slate-200 dark:text-slate-300 dark:bg-slate-700 text-sm'
+                                    : (result === 'H' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' : 'text-red-500 bg-red-100 dark:bg-red-900/30')
+                              } px-2 py-0.5 rounded text-xs flex items-center justify-center`}>
+                                {result || '-'}
+                              </span>
+                            );
+                          })}
                         </div>
                         <div className="w-1/3 text-right font-black text-slate-800 dark:text-slate-100">
-                          {settings.tiebreakerMode === 'roll' ? (tiebreaker.flips[tiebreaker.flips.length-1]?.[pId] || '-') : tiebreaker.scores[pId]}
+                          {settings.tiebreakerMode === 'roll' ? (tiebreaker.flips[tiebreaker.flips.length-1]?.[pId] || '-') : (tiebreaker.scores[pId] || 0)}
                         </div>
                       </div>
                     ))}
