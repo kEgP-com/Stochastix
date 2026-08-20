@@ -273,7 +273,7 @@ export default function Dashboard({ socket, currentUser }) {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 h-full transition-colors">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 h-full transition-colors flex flex-col">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Theoretical vs. Actual Rolls</h3>
                 {availableConfigs.length > 0 && (
@@ -289,7 +289,7 @@ export default function Dashboard({ socket, currentUser }) {
                 )}
               </div>
               {chartData.length > 0 ? (
-                <div className="h-80">
+                <div className="flex-1 min-h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                       <XAxis dataKey="sum" stroke="currentColor" className="text-slate-500 dark:text-slate-400" />
@@ -301,7 +301,7 @@ export default function Dashboard({ socket, currentUser }) {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-80 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                <div className="flex-1 min-h-[320px] flex items-center justify-center text-slate-400 dark:text-slate-500">
                   No 2d6 games played yet.
                 </div>
               )}
