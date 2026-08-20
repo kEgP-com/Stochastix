@@ -5,7 +5,7 @@ export default function Lobby({ roomState, socket }) {
 
   const handleSettingsChange = (setting, value) => {
     let val = value;
-    if (setting !== 'tiebreakerMode') {
+    if (['maxPlayers', 'diceCount', 'diceSides', 'piecesPerPlayer'].includes(setting) || (setting === 'maxRolls' && value !== 'Unlimited')) {
       val = parseInt(value);
     }
     const newSettings = { [setting]: val };
