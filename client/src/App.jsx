@@ -130,6 +130,12 @@ function App() {
       setRoomId('');
     });
 
+    socket.on('kicked', () => {
+      setRoomState(null);
+      setRoomId('');
+      alert('You have been kicked from the lobby by the Game Master.');
+    });
+
     return () => {
       socket.off('roomCreated');
       socket.off('roomState');
@@ -142,6 +148,7 @@ function App() {
       socket.off('disconnect');
       socket.off('profileUpdated');
       socket.off('registerSuccess');
+      socket.off('kicked');
     };
   }, []);
 

@@ -75,11 +75,24 @@ export default function Lobby({ roomState, socket, onLeave }) {
                   {id === roomState.host && !roomState.isSinglePlayer && <span className="text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded shadow-sm border border-amber-200 dark:border-amber-800" title="Game Master">👑</span>}
                   {player.isAI && <span className="text-xs bg-slate-200 dark:bg-slate-600 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">AI</span>}
                 </div>
-                {!player.isAI && (
-                  <span className={`text-xs font-bold uppercase px-2 py-1 rounded border ${player.lobbyReady ? 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800' : 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
-                    {player.lobbyReady ? 'Ready' : 'Not Ready'}
-                  </span>
-                )}
+                <div className="flex items-center space-x-2">
+                  {!player.isAI && (
+                    <span className={`text-xs font-bold uppercase px-2 py-1 rounded border ${player.lobbyReady ? 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800' : 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
+                      {player.lobbyReady ? 'Ready' : 'Not Ready'}
+                    </span>
+                  )}
+                  {isHost && id !== socket.id && (
+                    <button
+                      onClick={() => socket.emit('kickPlayer', { roomId: roomState.id, targetId: id })}
+                      className="text-slate-400 hover:text-red-500 transition-colors px-1"
+                      title="Kick Player"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

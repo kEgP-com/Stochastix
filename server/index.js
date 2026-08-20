@@ -284,6 +284,19 @@ let passwordResetCodes = {};
     }
   });
 
+  socket.on('kickPlayer', ({ roomId, targetId }) => {
+    const room = rooms[roomId];
+    if (room && room.host === socket.id && (room.state === 'LOBBY' || room.state === 'SETUP')) {
+      room.removePlayer(targetId);
+      const targetSocket = io.sockets.sockets.get(targetId);
+      if (targetSocket) {
+        targetSocket.leave(roomId);
+        targetSocket.emit('kicked');
+      }
+      io.to(roomId).emit('roomState', room.getState());
+    }
+  });
+
   socket.on('startGame', ({ roomId }) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {

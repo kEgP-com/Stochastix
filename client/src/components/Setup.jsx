@@ -83,13 +83,26 @@ export default function Setup({ roomState, socket }) {
                   <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
                   {p.isAI && <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">AI</span>}
                 </div>
-                {p.ready ? (
-                  <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded text-xs uppercase tracking-wider">Ready</span>
-                ) : (
-                  <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded text-xs uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Placing...
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {p.ready ? (
+                    <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded text-xs uppercase tracking-wider">Ready</span>
+                  ) : (
+                    <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded text-xs uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Placing...
+                    </span>
+                  )}
+                  {roomState.host === socket.id && id !== socket.id && (
+                    <button
+                      onClick={() => socket.emit('kickPlayer', { roomId: roomState.id, targetId: id })}
+                      className="text-slate-400 hover:text-red-500 transition-colors px-1"
+                      title="Kick Player"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -136,17 +149,30 @@ export default function Setup({ roomState, socket }) {
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
               <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Player Status</h3>
               <div className="space-y-2">
-                {Object.values(roomState.players).map(p => (
-                  <div key={p.id} className="flex justify-between items-center text-sm font-semibold">
+                {Object.entries(roomState.players).map(([id, p]) => (
+                  <div key={id} className="flex justify-between items-center text-sm font-semibold">
                     <div className="flex items-center gap-2">
                       <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
                       {p.isAI && <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">AI</span>}
                     </div>
-                    {p.ready ? (
-                      <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded text-xs uppercase tracking-wider">Ready</span>
-                    ) : (
-                      <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded text-xs uppercase tracking-wider">Placing...</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {p.ready ? (
+                        <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded text-xs uppercase tracking-wider">Ready</span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded text-xs uppercase tracking-wider">Placing...</span>
+                      )}
+                      {roomState.host === socket.id && id !== socket.id && (
+                        <button
+                          onClick={() => socket.emit('kickPlayer', { roomId: roomState.id, targetId: id })}
+                          className="text-slate-400 hover:text-red-500 transition-colors px-1"
+                          title="Kick Player"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
