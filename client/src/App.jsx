@@ -253,7 +253,7 @@ function App() {
 
   // Nav Bar
   const Header = () => (
-    <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm transition-colors relative z-50">
+    <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm transition-colors z-50">
       <div className="flex justify-between items-center w-full relative">
         <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { if(roomState) leaveRoom(); }}>
           {/* Logo */}
