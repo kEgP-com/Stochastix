@@ -107,6 +107,9 @@ const handleAuth = async (username, socket, password, email) => {
 const processGameOverPoints = (room) => {
   const pList = Object.entries(room.players).map(([id, p]) => ({ id, ...p }));
   const n = pList.length;
+  
+  const hasAI = pList.some(p => p.isAI);
+
   // Sort by pieces remaining ascending (fewer pieces = better rank)
   pList.sort((a, b) => {
     if (a.id === room.finalWinner) return -1;
@@ -118,13 +121,13 @@ const processGameOverPoints = (room) => {
   pList.forEach((p, index) => {
     const rank = index + 1;
     const diff = avgRank - rank;
-    const pointChange = Math.round(diff * 50);
+    const pointChange = hasAI ? 0 : Math.round(diff * 50);
 
     // Apply the calculated pointChange to the actual room.players object so clients receive it
     room.players[p.id].pointChange = pointChange;
 
     if (!p.isAI) {
-      if (globalUsers[p.name]) {
+      if (globalUsers[p.name] && !hasAI) {
         globalUsers[p.name].points = (globalUsers[p.name].points || 1000) + pointChange;
         saveUsers();
         io.emit('pointsUpdated', { username: p.name, points: globalUsers[p.name].points });
@@ -391,21 +394,24 @@ let passwordResetCodes = {};
 
         if (room.state === 'GAMEOVER') {
           if (!room.isDebugMatch) {
-            processGameOverPoints(room);
-            const newEntry = {
-              id: room.id,
-              timestamp: Date.now(),
-              settings: room.settings,
-              players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
-              winner: room.players[room.finalWinner]?.name || 'Unknown',
-              totalRolls: room.history.length,
-              rolls: [...room.history],
-              tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
-            };
-            globalHistory.push(newEntry);
-            saveHistory(newEntry);
-            io.emit('historyData', globalHistory);
-            io.to(roomId).emit('roomState', room.getState());
+              processGameOverPoints(room);
+              const hasAI = Object.values(room.players).some(p => p.isAI);
+              if (!hasAI) {
+                const newEntry = {
+                  id: room.id,
+                  timestamp: Date.now(),
+                  settings: room.settings,
+                  players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
+                  winner: room.players[room.finalWinner]?.name || 'Unknown',
+                  totalRolls: room.history.length,
+                  rolls: [...room.history],
+                  tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
+                };
+                globalHistory.push(newEntry);
+                saveHistory(newEntry);
+                io.emit('historyData', globalHistory);
+              }
+              io.to(roomId).emit('roomState', room.getState());
           }
         }
       }
@@ -416,7 +422,40 @@ let passwordResetCodes = {};
     const room = rooms[roomId];
     if (room && room.state === 'PLAYING' && room.players[socket.id]) {
       room.players[socket.id].readyToRoll = !room.players[socket.id].readyToRoll;
-      io.to(roomId).emit('roomState', room);
+      
+      const allHumansReady = Object.values(room.players).filter(p => !p.isAI).every(p => p.readyToRoll);
+      if (allHumansReady) {
+        const result = room.setReadyToRoll(socket.id); // This will trigger the roll
+        if (result && result.rolled) {
+          io.to(roomId).emit('diceRolled', result);
+          io.to(roomId).emit('roomState', room);
+          
+          if (room.state === 'GAMEOVER') {
+            if (!room.isDebugMatch) {
+              processGameOverPoints(room);
+              const hasAI = Object.values(room.players).some(p => p.isAI);
+              if (!hasAI) {
+                const newEntry = {
+                  id: room.id,
+                  timestamp: Date.now(),
+                  settings: room.settings,
+                  players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
+                  winner: room.players[room.finalWinner]?.name || 'Unknown',
+                  totalRolls: room.history.length,
+                  rolls: [...room.history],
+                  tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
+                };
+                globalHistory.push(newEntry);
+                saveHistory(newEntry);
+                io.emit('historyData', globalHistory);
+              }
+              io.to(roomId).emit('roomState', room.getState());
+            }
+          }
+        }
+      } else {
+        io.to(roomId).emit('roomState', room);
+      }
     }
   });
 
@@ -431,19 +470,22 @@ let passwordResetCodes = {};
             if (room.state === 'GAMEOVER') {
               if (!room.isDebugMatch) {
                 processGameOverPoints(room);
-                const newEntry = {
-                  id: room.id,
-                  timestamp: Date.now(),
-                  settings: room.settings,
-                  players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
-                  winner: room.players[room.finalWinner]?.name || 'Unknown',
-                  totalRolls: room.history.length,
-                  rolls: [...room.history],
-                  tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
-                };
-                globalHistory.push(newEntry);
-                saveHistory(newEntry);
-                io.emit('historyData', globalHistory);
+                const hasAI = Object.values(room.players).some(p => p.isAI);
+                if (!hasAI) {
+                  const newEntry = {
+                    id: room.id,
+                    timestamp: Date.now(),
+                    settings: room.settings,
+                    players: Object.values(room.players).map(p => ({ name: p.name, isAI: p.isAI, pointChange: p.pointChange })),
+                    winner: room.players[room.finalWinner]?.name || 'Unknown',
+                    totalRolls: room.history.length,
+                    rolls: [...room.history],
+                    tiebreaker: room.tiebreaker ? { ...room.tiebreaker } : null
+                  };
+                  globalHistory.push(newEntry);
+                  saveHistory(newEntry);
+                  io.emit('historyData', globalHistory);
+                }
               }
             }
             io.to(roomId).emit('roomState', room.getState());
