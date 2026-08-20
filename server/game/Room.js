@@ -138,6 +138,7 @@ class Room {
       this.players[p].ready = false;
       if (this.players[p].isAI) {
         this.players[p].pieces = this._getAIPlacement();
+        this.players[p].initialPieces = JSON.parse(JSON.stringify(this.players[p].pieces));
         this.players[p].ready = true;
       }
     }
@@ -153,6 +154,8 @@ class Room {
     if (totalPlaced !== this.settings.piecesPerPlayer) return false;
 
     this.players[socketId].pieces = placement;
+    // Store deep copy of initial placement for post-game analysis
+    this.players[socketId].initialPieces = JSON.parse(JSON.stringify(placement));
     this.players[socketId].ready = true;
 
     this._checkReady();

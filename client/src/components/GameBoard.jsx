@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { calculatePMF, calculateWinProbs } from '../lib/probability';
+import { calculatePMF, calculateWinProbs, getOptimalPlacement } from '../lib/probability';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -105,6 +105,47 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
     if (roomState.state !== 'PLAYING' && roomState.state !== 'TIEBREAKER' && roomState.state !== 'GAMEOVER') return {};
     return calculateWinProbs(roomState.players, pmf, 500);
   }, [roomState.players, pmf, roomState.state]);
+
+  const postGameAnalysis = React.useMemo(() => {
+    if (!gameOver) return null;
+    
+    const optimal = getOptimalPlacement(settings.diceCount, settings.diceSides, settings.piecesPerPlayer);
+    const errors = {};
+    
+    Object.values(roomState.players).forEach(p => {
+      if (!p.initialPieces) return;
+      let err = 0;
+      Object.keys(optimal).forEach(sum => {
+        const expected = optimal[sum] || 0;
+        const actual = p.initialPieces[sum] || 0;
+        err += Math.abs(expected - actual);
+      });
+      errors[p.id] = err;
+    });
+
+    if (Object.keys(errors).length === 0) return null; // Legacy game
+
+    let mastermind = null;
+    let minErr = Infinity;
+    let highestErr = -1;
+    let worstPlayer = null;
+
+    Object.keys(errors).forEach(id => {
+      if (errors[id] < minErr) {
+        minErr = errors[id];
+        mastermind = id;
+      }
+      if (errors[id] > highestErr) {
+        highestErr = errors[id];
+        worstPlayer = id;
+      }
+    });
+
+    const winnerId = roomState.finalWinner;
+    const isWinnerLucky = winnerId === worstPlayer && highestErr > 0;
+
+    return { mastermind, minErr, isWinnerLucky, luckiestPlayer: isWinnerLucky ? winnerId : null };
+  }, [gameOver, roomState.players, roomState.finalWinner, settings]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
@@ -541,6 +582,34 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                     ))}
                 </div>
               </div>
+
+              {postGameAnalysis && (
+                <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-xl p-4 text-left border border-indigo-200 dark:border-indigo-800 shadow-inner mb-6">
+                  <h3 className="font-bold text-indigo-800 dark:text-indigo-200 mb-3 border-b border-indigo-200 dark:border-indigo-700 pb-2">Debrief (Luck vs Skill)</h3>
+                  <div className="space-y-3">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🧠</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100">The Mastermind</span>
+                      </div>
+                      <div className="text-sm text-slate-600 dark:text-slate-300 ml-7">
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{roomState.players[postGameAnalysis.mastermind]?.name}</span> had the most mathematically optimal initial board placement.
+                      </div>
+                    </div>
+                    {postGameAnalysis.isWinnerLucky && (
+                      <div className="flex flex-col gap-1 mt-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">🍀</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-100">Pure Luck</span>
+                        </div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 ml-7">
+                          <span className="font-bold text-green-600 dark:text-green-400">{roomState.players[postGameAnalysis.luckiestPlayer]?.name}</span> won despite having the worst initial mathematical placement! The dice favored them today!
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {tiebreaker && (
                 <div className="mt-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 text-left border border-slate-200 dark:border-slate-700 shadow-inner">
