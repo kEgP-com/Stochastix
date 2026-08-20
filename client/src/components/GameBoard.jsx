@@ -121,7 +121,7 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
               )}
             </div>
             {!gameOver && !isTiebreaker && (
-              <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto justify-start sm:justify-end">
                 {roomState.history.length === 0 && (
                   <button
                     onClick={() => socket.emit('toggleReadyToRoll', { roomId: roomState.id })}
@@ -139,10 +139,10 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                 )}
 
                 {(roomState.host === socket.id) && (
-                  <>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
                     <button
                       onClick={() => setAutoRoll(!autoRoll)}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 ease-in-out active:scale-95 border ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-300 ease-in-out active:scale-95 border flex-1 sm:flex-none ${autoRoll ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 shadow-inner' : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 shadow-sm'}`}
                     >
                       <div className={`w-8 h-4 rounded-full flex items-center p-[2px] transition-colors duration-300 ease-in-out ${autoRoll ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-300 dark:bg-slate-600'}`}>
                         <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-in-out ${autoRoll ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -162,7 +162,7 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                     >
                       {isRollingGlobal ? 'Rolling...' : (roomState.history.length === 0 && !allHumansReady ? `Force Roll (${humanReadyCount}/${allHumans.length})` : 'Roll Dice')}
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             )}
