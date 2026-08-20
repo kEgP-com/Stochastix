@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Lobby({ roomState, socket }) {
+export default function Lobby({ roomState, socket, onLeave }) {
   const isHost = roomState.host === socket.id;
 
   const handleSettingsChange = (setting, value) => {
@@ -35,8 +35,17 @@ export default function Lobby({ roomState, socket }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors animate-fade-in">
-      <h2 className="text-2xl font-bold mb-6 text-slate-800 dark:text-slate-100">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors animate-fade-in relative">
+      <button 
+        onClick={onLeave}
+        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2"
+        title="Leave Lobby"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h2 className="text-2xl font-bold mb-6 text-slate-800 dark:text-slate-100 pr-10">
         {roomState.isSinglePlayer ? 'Single Player Setup' : 'Multiplayer Lobby'}
       </h2>
       

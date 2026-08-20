@@ -671,7 +671,7 @@ function App() {
       
       <main className="flex-1 max-w-7xl mx-auto p-6 w-full animate-fade-in">
         {roomState.state === 'LOBBY' && (
-          <Lobby roomState={roomState} socket={socket} />
+          <Lobby roomState={roomState} socket={socket} onLeave={leaveRoom} />
         )}
         {roomState.state === 'SETUP' && (
           <Setup roomState={roomState} socket={socket} />
