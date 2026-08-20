@@ -441,7 +441,7 @@ export default function Dashboard({ socket, currentUser }) {
 
       {/* TAB CONTENT: CAREER */}
       {activeTab === 'career' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8 max-w-3xl">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors">
             <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100 mb-6">Player Profile</h3>
             {careerStats ? (
@@ -471,57 +471,6 @@ export default function Dashboard({ socket, currentUser }) {
             )}
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors">
-            <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100 mb-6">Rivals & Nemeses</h3>
-            {careerStats ? (
-              <div className="space-y-6">
-                {careerStats.nemesis && (
-                  <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="text-2xl">😈</span>
-                      <div className="text-sm font-bold text-red-500 dark:text-red-400 uppercase tracking-wider">Your Nemesis</div>
-                    </div>
-                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200 ml-9">
-                      <span className="text-red-600 dark:text-red-400 font-black">{careerStats.nemesis.name}</span> has beaten you {careerStats.nemesis.count} times.
-                    </div>
-                  </div>
-                )}
-                {careerStats.punchingBag && (
-                  <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-900/30">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="text-2xl">🥊</span>
-                      <div className="text-sm font-bold text-green-500 dark:text-green-400 uppercase tracking-wider">Your Punching Bag</div>
-                    </div>
-                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200 ml-9">
-                      You've beaten <span className="text-green-600 dark:text-green-400 font-black">{careerStats.punchingBag.name}</span> {careerStats.punchingBag.count} times.
-                    </div>
-                  </div>
-                )}
-                
-                {Object.keys(careerStats.rivalStats).length > 0 && (
-                  <div>
-                    <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-700 pb-2 mt-4">Head-to-Head Records</h4>
-                    <div className="space-y-3">
-                      {Object.entries(careerStats.rivalStats).map(([name, stats]) => (
-                        <div key={name} className="flex justify-between items-center text-sm">
-                          <span className="font-bold text-slate-700 dark:text-slate-300">{name}</span>
-                          <span className="font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
-                            <span className="text-green-600 dark:text-green-400">{stats.winsOverThem}</span> - <span className="text-red-500 dark:text-red-400">{stats.lossesToThem}</span>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {Object.keys(careerStats.rivalStats).length === 0 && (
-                  <div className="text-slate-500">You haven't played against any human opponents yet.</div>
-                )}
-              </div>
-            ) : (
-              <div className="text-slate-500">Play some multiplayer games to meet your rivals!</div>
-            )}
-          </div>
         </div>
       )}
 
