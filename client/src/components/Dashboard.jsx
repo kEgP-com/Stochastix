@@ -441,7 +441,7 @@ export default function Dashboard({ socket, currentUser }) {
 
       {/* TAB CONTENT: CAREER */}
       {activeTab === 'career' && (
-        <div className="grid grid-cols-1 gap-8 max-w-3xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors">
             <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100 mb-6">Player Profile</h3>
             {careerStats ? (
@@ -471,6 +471,29 @@ export default function Dashboard({ socket, currentUser }) {
             )}
           </div>
 
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors">
+            <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100 mb-6">Head-to-Head Records</h3>
+            {careerStats ? (
+              <div className="space-y-6">
+                {Object.keys(careerStats.rivalStats).length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(careerStats.rivalStats).map(([name, stats]) => (
+                      <div key={name} className="flex justify-between items-center text-sm">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{name}</span>
+                        <span className="font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
+                          <span className="text-green-600 dark:text-green-400">{stats.winsOverThem}</span> - <span className="text-red-500 dark:text-red-400">{stats.lossesToThem}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-slate-500">You haven't played against any human opponents yet.</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-slate-500">Play some multiplayer games to see your head-to-head records!</div>
+            )}
+          </div>
         </div>
       )}
 
