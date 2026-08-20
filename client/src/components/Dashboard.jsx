@@ -317,6 +317,12 @@ export default function Dashboard({ socket, currentUser }) {
                  </div>
                </div>
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+                 <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Win Rate</div>
+                 <div className="text-3xl font-black text-indigo-500 dark:text-indigo-400">
+                    {history.length > 0 ? Math.round((history.filter(g => g.winner === currentUser?.username).length / history.length) * 100) : 0}%
+                 </div>
+               </div>
+               <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                  <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Total Rolls Recorded</div>
                  <div className="text-3xl font-black text-blue-600 dark:text-blue-400">
                     {history.reduce((sum, g) => sum + g.totalRolls, 0)}
