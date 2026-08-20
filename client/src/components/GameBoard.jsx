@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { calculatePMF } from '../lib/probability';
+import { calculatePMF, calculateWinProbs } from '../lib/probability';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -101,6 +101,11 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
   const humanReadyCount = allHumans.filter(p => p.readyToRoll).length;
   const allHumansReady = allHumans.length === 0 || humanReadyCount === allHumans.length;
 
+  const winProbs = React.useMemo(() => {
+    if (roomState.state !== 'PLAYING' && roomState.state !== 'TIEBREAKER' && roomState.state !== 'GAMEOVER') return {};
+    return calculateWinProbs(roomState.players, pmf, 500);
+  }, [roomState.players, pmf, roomState.state]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
       
@@ -180,7 +185,14 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                         {player.name}
                         {player.isAI && <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">AI</span>}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold">{player.totalPieces} blocks left</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold">{player.totalPieces} blocks left</div>
+                        {winProbs[id] !== undefined && (
+                          <div className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">
+                            {winProbs[id]}% Win Prob
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {roomState.state === 'PLAYING' && (
                       <div>
@@ -207,9 +219,18 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
           {me && (
             <div className="relative mt-auto pt-4 border-t border-slate-100 dark:border-slate-700">
               <div className="flex justify-between items-end mb-4">
-                <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                  My Board
-                </h3>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                    My Board
+                  </h3>
+                  {winProbs[socket.id] !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold px-2 py-1 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-sm">
+                        {winProbs[socket.id]}% Win Probability
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Pieces left</span>
                   <span className="text-3xl font-black text-blue-600 dark:text-blue-400">{me.totalPieces}</span>

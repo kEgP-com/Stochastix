@@ -74,3 +74,65 @@ export function getOptimalPlacement(count, sides, totalPieces) {
 
   return placement;
 }
+
+export function calculateWinProbs(players, pmf, simulations = 1000) {
+  const playerIds = Object.keys(players);
+  if (playerIds.length === 0) return {};
+  
+  const wins = {};
+  playerIds.forEach(id => wins[id] = 0);
+
+  const cumPmf = [];
+  let cum = 0;
+  pmf.forEach(p => {
+    cum += p.probability;
+    cumPmf.push({ sum: p.sum, cum });
+  });
+
+  for (let s = 0; s < simulations; s++) {
+    const simPieces = {};
+    const simTotal = {};
+    playerIds.forEach(id => {
+      simPieces[id] = { ...players[id].pieces };
+      simTotal[id] = players[id].totalPieces;
+    });
+
+    let gameWon = false;
+    let fallbackCounter = 0;
+    while (!gameWon && fallbackCounter < 1000) {
+      fallbackCounter++;
+      const r = Math.random();
+      let rollSum = cumPmf[0].sum;
+      for (let i = 0; i < cumPmf.length; i++) {
+        if (r <= cumPmf[i].cum) {
+          rollSum = cumPmf[i].sum;
+          break;
+        }
+      }
+
+      const winners = [];
+      playerIds.forEach(id => {
+        if (simPieces[id][rollSum] > 0) {
+          simPieces[id][rollSum]--;
+          simTotal[id]--;
+        }
+        if (simTotal[id] === 0) {
+          winners.push(id);
+        }
+      });
+
+      if (winners.length > 0) {
+        winners.forEach(id => {
+          wins[id] += (1 / winners.length);
+        });
+        gameWon = true;
+      }
+    }
+  }
+
+  const winProbs = {};
+  playerIds.forEach(id => {
+    winProbs[id] = Math.round((wins[id] / simulations) * 100);
+  });
+  return winProbs;
+}
