@@ -63,7 +63,7 @@ export default function Lobby({ roomState, socket }) {
                   <span className={`w-3 h-3 rounded-full shadow-sm ${id === roomState.host ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
                   <span className="font-medium">{player.name}</span>
                   {id === socket.id && <span className="text-xs text-slate-500 dark:text-slate-400 font-bold bg-white dark:bg-slate-800 px-2 py-1 rounded shadow-sm border border-slate-200 dark:border-slate-700">(You)</span>}
-                  {id === roomState.host && !roomState.isSinglePlayer && <span className="text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded shadow-sm border border-amber-200 dark:border-amber-800">👑 Game Master</span>}
+                  {id === roomState.host && !roomState.isSinglePlayer && <span className="text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded shadow-sm border border-amber-200 dark:border-amber-800" title="Game Master">👑</span>}
                   {player.isAI && <span className="text-xs bg-slate-200 dark:bg-slate-600 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">AI</span>}
                 </div>
                 {!player.isAI && (
