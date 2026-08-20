@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { getOptimalPlacement } from '../lib/probability';
+import React, { useState, useMemo } from 'react';
+import { getOptimalPlacement, calculatePMF } from '../lib/probability';
 
 export default function Setup({ roomState, socket }) {
   const settings = roomState.settings;
   const minSum = settings.diceCount;
   const maxSum = settings.diceCount * settings.diceSides;
   
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  
+  const pmf = useMemo(() => calculatePMF(settings.diceCount, settings.diceSides), [settings]);
+  const maxProb = useMemo(() => Math.max(...pmf.map(p => p.probability)), [pmf]);
+
   const me = roomState.players[socket.id];
   const [placement, setPlacement] = useState(() => {
     if (me?.pieces && Object.keys(me.pieces).length > 0) {
@@ -179,6 +184,13 @@ export default function Setup({ roomState, socket }) {
               </button>
               
               <button
+                onClick={() => setShowHeatmap(!showHeatmap)}
+                className={`font-semibold px-4 py-2 rounded-lg transition-colors ${showHeatmap ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+              >
+                {showHeatmap ? 'Hide Heatmap' : 'Show Probability Heatmap'}
+              </button>
+              
+              <button
                 onClick={submitPlacement}
                 disabled={remaining !== 0}
                 className="w-full bg-green-600 dark:bg-green-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-green-700 dark:hover:bg-green-600 active:scale-95 transition shadow-lg shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
@@ -192,16 +204,26 @@ export default function Setup({ roomState, socket }) {
           {/* Right Main Area: Board */}
           <div className="w-full lg:w-2/3">
             <div className="flex bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar-x gap-3 h-full min-h-[300px] shadow-inner transition-colors hover:border-blue-200 dark:hover:border-blue-800">
-              {Array.from({ length: maxSum - minSum + 1 }, (_, i) => i + minSum).map(num => (
+              {Array.from({ length: maxSum - minSum + 1 }, (_, i) => i + minSum).map(num => {
+                const prob = pmf.find(p => p.sum === num)?.probability || 0;
+                const intensity = maxProb > 0 ? Math.max(0, prob / maxProb) : 0;
+                // Yellow/Orange for low, Green for high
+                const heatmapStyle = showHeatmap ? { backgroundColor: `rgba(34, 197, 94, ${intensity * 0.4 + 0.05})` } : {};
+                
+                return (
                 <div 
                   key={num} 
                   onClick={() => handleColumnClick(num)}
                   className={`flex-1 min-w-[36px] flex flex-col items-center justify-end relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-t-xl transition-colors ${remaining > 0 ? 'cursor-pointer hover:bg-blue-50/50 dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
                 >
-                  <div className="absolute top-0 w-full py-2 bg-slate-100 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600 text-center rounded-t-xl transition-colors">
-                    <span className="text-base font-bold text-slate-600 dark:text-slate-300">{num}</span>
+                  {showHeatmap && <div className="absolute inset-0 rounded-t-xl pointer-events-none transition-colors" style={heatmapStyle}></div>}
+                  <div className="absolute top-0 w-full py-1 text-center opacity-50 z-10">
+                    <span className="text-sm font-black text-slate-400 dark:text-slate-500">{num}</span>
+                    {showHeatmap && (
+                      <div className="text-[9px] font-bold text-green-600 dark:text-green-400 -mt-1">{(prob * 100).toFixed(1)}%</div>
+                    )}
                   </div>
-                  <div className="flex flex-col gap-1 pb-2 pt-12 items-center w-full min-h-[200px]">
+                  <div className="flex flex-col gap-1 pb-1 pt-12 items-center w-full min-h-[200px] z-10">
                     {Array.from({ length: placement[num] }).map((_, i) => (
                       <div 
                         key={`board-${num}-${i}`}
@@ -212,7 +234,8 @@ export default function Setup({ roomState, socket }) {
                     ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

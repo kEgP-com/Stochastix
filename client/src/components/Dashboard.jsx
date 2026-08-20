@@ -156,9 +156,64 @@ export default function Dashboard({ socket, currentUser }) {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'history', label: 'Match History' },
+    { id: 'career', label: 'Career Stats' },
     { id: 'theory', label: 'Theory & Probabilities' },
     { id: 'tiebreaker', label: 'Tiebreaker Stats' },
   ];
+
+  const careerStats = useMemo(() => {
+    if (history.length === 0) return null;
+    
+    // Average Rolls per game
+    const totalRolls = history.reduce((sum, g) => sum + g.totalRolls, 0);
+    const avgRolls = Math.round(totalRolls / history.length);
+    
+    // Win Rate by Dice Config
+    const configStats = {};
+    const rivalStats = {};
+
+    history.forEach(g => {
+      const isWin = g.winner === currentUser?.username;
+      
+      const config = `${g.settings.diceCount}d${g.settings.diceSides}`;
+      if (!configStats[config]) configStats[config] = { played: 0, wins: 0 };
+      configStats[config].played++;
+      if (isWin) configStats[config].wins++;
+
+      g.players.forEach(p => {
+        if (p.name !== currentUser?.username && !p.isAI) {
+          if (!rivalStats[p.name]) rivalStats[p.name] = { played: 0, winsOverThem: 0, lossesToThem: 0 };
+          rivalStats[p.name].played++;
+          if (isWin) rivalStats[p.name].winsOverThem++;
+          else if (g.winner === p.name) rivalStats[p.name].lossesToThem++;
+        }
+      });
+    });
+
+    let nemesis = null;
+    let nemesisLosses = 0;
+    let punchingBag = null;
+    let punchingBagWins = 0;
+    
+    Object.keys(rivalStats).forEach(rival => {
+      if (rivalStats[rival].lossesToThem > nemesisLosses) {
+        nemesisLosses = rivalStats[rival].lossesToThem;
+        nemesis = rival;
+      }
+      if (rivalStats[rival].winsOverThem > punchingBagWins) {
+        punchingBagWins = rivalStats[rival].winsOverThem;
+        punchingBag = rival;
+      }
+    });
+
+    return {
+      avgRolls,
+      configStats,
+      rivalStats,
+      nemesis: nemesisLosses > 0 ? { name: nemesis, count: nemesisLosses } : null,
+      punchingBag: punchingBagWins > 0 ? { name: punchingBag, count: punchingBagWins } : null
+    };
+  }, [history, currentUser]);
 
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -379,6 +434,92 @@ export default function Dashboard({ socket, currentUser }) {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB CONTENT: CAREER */}
+      {activeTab === 'career' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors">
+            <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100 mb-6">Player Profile</h3>
+            {careerStats ? (
+              <div className="space-y-6">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+                  <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Average Rolls Per Game</div>
+                  <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{careerStats.avgRolls}</div>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-700 pb-2">Win Rate by Configuration</h4>
+                  <div className="space-y-3">
+                    {Object.entries(careerStats.configStats).map(([config, stats]) => (
+                      <div key={config} className="flex justify-between items-center text-sm">
+                        <span className="font-bold text-slate-600 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">{config}</span>
+                        <div className="text-right">
+                          <span className="font-black text-slate-800 dark:text-slate-200">{Math.round((stats.wins / stats.played) * 100)}%</span>
+                          <span className="text-slate-500 dark:text-slate-400 ml-2">({stats.wins}/{stats.played})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-slate-500">No career stats available yet. Play some games!</div>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 transition-colors">
+            <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100 mb-6">Rivals & Nemeses</h3>
+            {careerStats ? (
+              <div className="space-y-6">
+                {careerStats.nemesis && (
+                  <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-2xl">😈</span>
+                      <div className="text-sm font-bold text-red-500 dark:text-red-400 uppercase tracking-wider">Your Nemesis</div>
+                    </div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200 ml-9">
+                      <span className="text-red-600 dark:text-red-400 font-black">{careerStats.nemesis.name}</span> has beaten you {careerStats.nemesis.count} times.
+                    </div>
+                  </div>
+                )}
+                {careerStats.punchingBag && (
+                  <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-900/30">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-2xl">🥊</span>
+                      <div className="text-sm font-bold text-green-500 dark:text-green-400 uppercase tracking-wider">Your Punching Bag</div>
+                    </div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200 ml-9">
+                      You've beaten <span className="text-green-600 dark:text-green-400 font-black">{careerStats.punchingBag.name}</span> {careerStats.punchingBag.count} times.
+                    </div>
+                  </div>
+                )}
+                
+                {Object.keys(careerStats.rivalStats).length > 0 && (
+                  <div>
+                    <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-700 pb-2 mt-4">Head-to-Head Records</h4>
+                    <div className="space-y-3">
+                      {Object.entries(careerStats.rivalStats).map(([name, stats]) => (
+                        <div key={name} className="flex justify-between items-center text-sm">
+                          <span className="font-bold text-slate-700 dark:text-slate-300">{name}</span>
+                          <span className="font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded">
+                            <span className="text-green-600 dark:text-green-400">{stats.winsOverThem}</span> - <span className="text-red-500 dark:text-red-400">{stats.lossesToThem}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {Object.keys(careerStats.rivalStats).length === 0 && (
+                  <div className="text-slate-500">You haven't played against any human opponents yet.</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-slate-500">Play some multiplayer games to meet your rivals!</div>
             )}
           </div>
         </div>
