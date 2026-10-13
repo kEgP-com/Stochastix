@@ -32,7 +32,7 @@ export default function Lobby({ roomState, socket, onLeave }) {
 
   const handleSettingsChange = (setting, value) => {
     let val = value;
-    if (['maxPlayers', 'diceCount', 'diceSides', 'piecesPerPlayer'].includes(setting) || (setting === 'maxRolls' && value !== 'Unlimited')) {
+    if (['maxPlayers', 'diceCount', 'diceSides', 'piecesPerPlayer'].includes(setting)) {
       val = parseInt(value, 10);
     }
     const newSettings = { [setting]: val };
@@ -433,7 +433,7 @@ export default function Lobby({ roomState, socket, onLeave }) {
                 </label>
                 <div className="grid grid-cols-4 gap-1.5">
                   {['Unlimited', '30', '50', '100'].map((opt) => {
-                    const active = (roomState.settings.maxRolls || 'Unlimited') === opt;
+                    const active = String(roomState.settings.maxRolls || 'Unlimited') === String(opt);
                     return (
                       <button
                         key={opt}
