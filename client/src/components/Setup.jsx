@@ -14,7 +14,10 @@ export default function Setup({ roomState, socket }) {
   const me = roomState.players[socket.id];
   const [placement, setPlacement] = useState(() => {
     if (me?.pieces && Object.keys(me.pieces).length > 0) {
-      return { ...me.pieces };
+      const sum = Object.values(me.pieces).reduce((a, b) => a + b, 0);
+      if (sum === settings.piecesPerPlayer) {
+        return { ...me.pieces };
+      }
     }
     const initial = {};
     for (let i = minSum; i <= maxSum; i++) {

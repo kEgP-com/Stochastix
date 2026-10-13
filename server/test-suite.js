@@ -260,6 +260,14 @@ async function runTests() {
       }
     });
 
+    socket.on('resetToLobby', ({ roomId }) => {
+      const room = rooms[roomId];
+      if (room && room.host === socket.id) {
+        room.resetToLobby();
+        io.to(roomId).emit('roomState', room.getState());
+      }
+    });
+
     socket.on('leaveRoom', ({ roomId }) => {
       const room = rooms[roomId];
       if (room) {
@@ -579,6 +587,50 @@ async function runTests() {
   const optimalPlacement = prob.getOptimalPlacement(2, 6, 12);
   const totalOptimal = Object.values(optimalPlacement).reduce((a, b) => a + b, 0);
   assert(totalOptimal === 12, 'getOptimalPlacement distributes exact requested piece count');
+
+  console.log('\n--- TEST GROUP 8: RETURN TO LOBBY & FRESH SESSION REFRESH ---');
+  // Complete single player game artificially to test resetToLobby
+  spRoom.state = 'GAMEOVER';
+  spRoom.finalWinner = c3.id;
+  spRoom.history = [7, 7, 7, 7];
+  spRoom.players[c3.id].totalPieces = 0;
+  spRoom.players[c3.id].pieces = { 7: 0 };
+  spRoom.players[aiPlayerKey].totalPieces = 2;
+
+  // Return to lobby
+  c3.emit('resetToLobby', { roomId: spRoomId });
+  await new Promise(r => setTimeout(r, 60));
+
+  assert(spRoom.state === 'LOBBY', 'Room state cleanly reset to LOBBY');
+  assert(spRoom.history.length === 0, 'Room roll history purged on lobby reset');
+  assert(spRoom.finalWinner === null, 'finalWinner cleared on lobby reset');
+  assert(spRoom.players[c3.id].totalPieces === 12, 'Human player totalPieces restored to 12');
+  assert(Object.keys(spRoom.players[c3.id].pieces).length === 0, 'Human pieces purged on lobby reset');
+  assert(spRoom.players[c3.id].lobbyReady === false, 'lobbyReady unreadied for fresh session');
+
+  // Start new match
+  c3.emit('toggleLobbyReady', { roomId: spRoomId });
+  await new Promise(r => setTimeout(r, 40));
+  c3.emit('startGame', { roomId: spRoomId });
+  await new Promise(r => setTimeout(r, 60));
+
+  assert(spRoom.state === 'SETUP', 'Second game successfully entered SETUP');
+  assert(spRoom.players[aiPlayerKey].totalPieces === 12, 'AI player has fresh 12 pieces');
+
+  // Human locks in placement
+  const freshPlacement = { 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 1, 10: 1 };
+  c3.emit('setPlacement', { roomId: spRoomId, placement: freshPlacement });
+  await new Promise(r => setTimeout(r, 60));
+
+  assert(spRoom.state === 'PLAYING', 'Game transitioned to PLAYING with fresh placements');
+  assert(spRoom.players[c3.id].totalPieces === 12, 'Human enters PLAYING with 12 pieces intact');
+
+  // Force roll once -> should NOT instantly win!
+  c3.emit('hostForceRoll', { roomId: spRoomId });
+  await new Promise(r => setTimeout(r, 80));
+
+  assert(spRoom.state === 'PLAYING', 'Game does NOT automatically end on roll 1 (state is PLAYING)');
+  assert(spRoom.players[c3.id].totalPieces >= 11, 'Human player still has >= 11 blocks remaining');
 
   // Cleanup
   c1.disconnect();

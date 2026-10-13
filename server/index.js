@@ -330,11 +330,7 @@ let passwordResetCodes = {};
   socket.on('resetToLobby', ({ roomId }) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {
-      room.state = 'LOBBY';
-      // Unready everyone
-      for (const p of Object.values(room.players)) {
-        p.lobbyReady = false;
-      }
+      room.resetToLobby();
       io.to(roomId).emit('roomState', room.getState());
     }
   });

@@ -127,6 +127,23 @@ class Room {
     return true;
   }
 
+  resetToLobby() {
+    this.state = 'LOBBY';
+    this.history = [];
+    this.finalWinner = null;
+    this.tiebreaker = null;
+    for (const p in this.players) {
+      this.players[p].ready = false;
+      this.players[p].lobbyReady = false;
+      this.players[p].readyToRoll = false;
+      this.players[p].pieces = {};
+      delete this.players[p].initialPieces;
+      delete this.players[p].pointChange;
+      this.players[p].totalPieces = this.settings.piecesPerPlayer;
+    }
+    return true;
+  }
+
   startGame(socketId) {
     if (this.host !== socketId || this.state !== 'LOBBY') return false;
     
@@ -134,8 +151,18 @@ class Room {
     if (!allHumansReady) return false;
 
     this.state = 'SETUP';
+    this.history = [];
+    this.finalWinner = null;
+    this.tiebreaker = null;
+
     for (const p in this.players) {
       this.players[p].ready = false;
+      this.players[p].readyToRoll = false;
+      this.players[p].pieces = {};
+      delete this.players[p].initialPieces;
+      delete this.players[p].pointChange;
+      this.players[p].totalPieces = this.settings.piecesPerPlayer;
+
       if (this.players[p].isAI) {
         this.players[p].pieces = this._getAIPlacement();
         this.players[p].initialPieces = JSON.parse(JSON.stringify(this.players[p].pieces));
@@ -154,6 +181,7 @@ class Room {
     if (totalPlaced !== this.settings.piecesPerPlayer) return false;
 
     this.players[socketId].pieces = placement;
+    this.players[socketId].totalPieces = this.settings.piecesPerPlayer;
     // Store deep copy of initial placement for post-game analysis
     this.players[socketId].initialPieces = JSON.parse(JSON.stringify(placement));
     this.players[socketId].ready = true;

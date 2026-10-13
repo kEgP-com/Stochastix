@@ -85,6 +85,9 @@ function App() {
     });
 
     socket.on('roomState', (state) => {
+      if (state.state === 'LOBBY' || state.state === 'SETUP') {
+        setLastRoll(null);
+      }
       if (state.state === 'PLAYING' || state.state === 'GAMEOVER' || state.state === 'TIEBREAKER') {
         setPendingState(state);
       } else {
