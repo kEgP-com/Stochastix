@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { getOptimalPlacement, calculatePMF } from '../lib/probability';
+import { calculatePMF } from '../lib/probability';
 
 export default function Setup({ roomState, socket }) {
   const settings = roomState.settings;
@@ -70,31 +70,31 @@ export default function Setup({ roomState, socket }) {
 
   if (me.ready) {
     return (
-      <div className="text-center py-20 animate-fade-in text-slate-800 dark:text-slate-100 max-w-lg mx-auto">
-        <h2 className="text-3xl font-bold mb-4">Waiting for other players...</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-lg mb-8">You have placed all your pieces.</p>
+      <div className="text-center py-16 animate-fade-in text-slate-100 max-w-lg mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 font-display">Waiting for other players...</h2>
+        <p className="text-slate-400 text-sm mb-6">Your pieces are locked in and ready.</p>
         
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm text-left mb-8">
-          <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Player Status</h3>
-          <div className="space-y-3">
+        <div className="glass-panel rounded-2xl p-5 border border-slate-700/60 shadow-xl text-left mb-6">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Player Status</h3>
+          <div className="space-y-2.5">
             {Object.entries(roomState.players).map(([id, p]) => (
-              <div key={id} className="flex justify-between items-center font-semibold">
+              <div key={id} className="flex justify-between items-center font-semibold text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
-                  {p.isAI && <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">AI</span>}
+                  <span className="text-slate-200">{p.name}</span>
+                  {p.isAI && <span className="text-[10px] bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded">AI</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {p.ready ? (
-                    <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded text-xs uppercase tracking-wider">Ready</span>
+                    <span className="text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg text-xs font-bold">Ready</span>
                   ) : (
-                    <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded text-xs uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Placing...
+                    <span className="text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Placing...
                     </span>
                   )}
                   {roomState.host === socket.id && id !== socket.id && (
                     <button
                       onClick={() => socket.emit('kickPlayer', { roomId: roomState.id, targetId: id })}
-                      className="text-slate-400 hover:text-red-500 transition-colors px-1"
+                      className="text-slate-400 hover:text-red-400 transition-colors px-1"
                       title="Kick Player"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,16 +108,16 @@ export default function Setup({ roomState, socket }) {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-5">
           <div className="flex justify-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+            <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+            <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
           </div>
           
           <button
             onClick={() => socket.emit('unreadyPlacement', { roomId: roomState.id })}
-            className="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl shadow-sm transition-colors active:scale-95"
+            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs rounded-xl shadow-sm transition-colors active:scale-95"
           >
             Edit Board
           </button>
@@ -127,14 +127,14 @@ export default function Setup({ roomState, socket }) {
   }
 
   return (
-    <div className="w-full space-y-6 animate-fade-in">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-6 overflow-hidden transition-colors">
+    <div className="w-full space-y-6 animate-fade-in pb-12">
+      <div className="glass-panel rounded-2xl shadow-xl border border-slate-700/60 p-5 sm:p-6 overflow-hidden transition-all">
         
-        <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">
+        <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-1">Setup Phase</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">
-              Drag pieces to corresponding columns.
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-100 font-display mb-0.5">Setup Phase</h2>
+            <p className="text-slate-400 text-xs sm:text-sm">
+              Click columns to place your blocks. The numbers with higher probability will be rolled more frequently!
             </p>
           </div>
         </div>
@@ -146,25 +146,25 @@ export default function Setup({ roomState, socket }) {
           <div className="w-full lg:w-1/3 flex flex-col gap-6">
 
             {/* Player Readiness Status */}
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Player Status</h3>
+            <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-800">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Player Status</h3>
               <div className="space-y-2">
                 {Object.entries(roomState.players).map(([id, p]) => (
                   <div key={id} className="flex justify-between items-center text-sm font-semibold">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
-                      {p.isAI && <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">AI</span>}
+                      <span className="text-slate-200">{p.name}</span>
+                      {p.isAI && <span className="text-[10px] bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded">AI</span>}
                     </div>
                     <div className="flex items-center gap-2">
                       {p.ready ? (
-                        <span className="text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded text-xs uppercase tracking-wider">Ready</span>
+                        <span className="text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded text-xs">Ready</span>
                       ) : (
-                        <span className="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded text-xs uppercase tracking-wider">Placing...</span>
+                        <span className="text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded text-xs">Placing...</span>
                       )}
                       {roomState.host === socket.id && id !== socket.id && (
                         <button
                           onClick={() => socket.emit('kickPlayer', { roomId: roomState.id, targetId: id })}
-                          className="text-slate-400 hover:text-red-500 transition-colors px-1"
+                          className="text-slate-400 hover:text-red-400 transition-colors px-1"
                           title="Kick Player"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,50 +178,56 @@ export default function Setup({ roomState, socket }) {
               </div>
             </div>
             
-            <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-6 py-4 rounded-xl border border-blue-100 dark:border-blue-800 transition-colors">
-              <div className="text-sm font-bold text-blue-800/60 dark:text-blue-400/80 uppercase tracking-widest">Pieces Left</div>
-              <div className="text-4xl font-black text-blue-600 dark:text-blue-400 leading-none">{remaining}</div>
+            <div className="flex items-center justify-between bg-indigo-950/40 px-5 py-3.5 rounded-xl border border-indigo-800/40 transition-colors">
+              <div className="text-xs font-bold text-indigo-300 uppercase tracking-wider">Blocks Remaining</div>
+              <div className="text-3xl font-black text-indigo-400 font-mono leading-none">{remaining}</div>
             </div>
 
             {/* Piece Pool */}
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 min-h-[160px] transition-colors flex-1 flex flex-col">
-              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Piece Pool</h3>
+            <div className="bg-slate-900/60 rounded-xl p-5 border-2 border-dashed border-slate-800 min-h-[140px] transition-colors flex-1 flex flex-col">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Block Pool</h3>
               <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
                 {Array.from({ length: remaining }).map((_, i) => (
                   <div
                     key={`pool-${i}`}
-                    className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-lg shadow-md border-b-4 border-blue-700 dark:border-blue-800 transition-transform"
+                    className="w-8 h-8 bg-gradient-to-b from-indigo-500 to-indigo-700 rounded-lg shadow-sm border border-indigo-400/30 transition-transform"
                   />
                 ))}
                 {remaining === 0 && (
-                  <div className="w-full text-center text-slate-400 dark:text-slate-500 font-medium py-4">
-                    All pieces placed! Ready to go.
+                  <div className="w-full text-center text-emerald-400 font-semibold py-4 text-xs">
+                    ✓ All blocks placed! Ready to lock in.
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={randomizePlacement}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold px-4 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                Randomize Placement
-              </button>
-              
-              <button
-                onClick={() => setShowHeatmap(!showHeatmap)}
-                className={`font-semibold px-4 py-2 rounded-lg transition-colors ${showHeatmap ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-              >
-                {showHeatmap ? 'Hide Heatmap' : 'Show Probability Heatmap'}
-              </button>
+            <div className="flex flex-col gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={randomizePlacement}
+                  className="text-xs font-bold text-slate-300 hover:text-white bg-slate-900/70 hover:bg-slate-800 border border-slate-700/80 px-3 py-2 rounded-xl transition-colors"
+                >
+                  🎲 Randomize
+                </button>
+                
+                <button
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                  className={`text-xs font-bold px-3 py-2 rounded-xl border transition-colors ${
+                    showHeatmap 
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                      : 'bg-slate-900/70 hover:bg-slate-800 text-slate-300 border-slate-700/80'
+                  }`}
+                >
+                  {showHeatmap ? '🔥 Heatmap On' : '📊 Heatmap'}
+                </button>
+              </div>
               
               <button
                 onClick={submitPlacement}
                 disabled={remaining !== 0}
-                className="w-full bg-green-600 dark:bg-green-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-green-700 dark:hover:bg-green-600 active:scale-95 transition shadow-lg shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none text-sm tracking-wide"
               >
-                Ready to Play
+                Lock In Placement
               </button>
             </div>
 
@@ -229,7 +235,7 @@ export default function Setup({ roomState, socket }) {
 
           {/* Right Main Area: Board */}
           <div className="w-full lg:w-2/3">
-            <div className="flex bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto custom-scrollbar-x gap-3 h-full min-h-[300px] shadow-inner transition-colors hover:border-blue-200 dark:hover:border-blue-800">
+            <div className="flex bg-slate-900/60 p-5 rounded-2xl border border-slate-800 overflow-x-auto custom-scrollbar-x gap-2.5 h-full min-h-[320px] shadow-inner transition-colors">
               {Array.from({ length: maxSum - minSum + 1 }, (_, i) => i + minSum).map(num => {
                 const prob = pmf.find(p => p.sum === num)?.probability || 0;
                 const intensity = maxProb > 0 ? Math.max(0, prob / maxProb) : 0;

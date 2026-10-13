@@ -3,7 +3,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { calculatePMF } from '../lib/probability';
 export default function Dashboard({ socket, currentUser }) {
   const [history, setHistory] = useState([]);
-  const username = currentUser?.username;
   const [activeTab, setActiveTab] = useState('overview'); // overview, history, theory, tiebreaker
   const [historyFilter, setHistoryFilter] = useState('all'); // all, win, loss
   const [theoryDiceCount, setTheoryDiceCount] = useState(2);

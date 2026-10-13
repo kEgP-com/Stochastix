@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { calculatePMF, calculateWinProbs, getOptimalPlacement } from '../lib/probability';
+import { calculatePMF, getOptimalPlacement } from '../lib/probability';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,9 +10,6 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
 
   const [autoRoll, setAutoRoll] = useState(false);
 
-  const readyToRoll = () => {
-    socket.emit('readyToRoll', { roomId: roomState.id });
-  };
 
   const [rollingFaces, setRollingFaces] = useState([]);
   const [tiebreakerSpinResult, setTiebreakerSpinResult] = useState({});
@@ -101,10 +98,6 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
   const humanReadyCount = allHumans.filter(p => p.readyToRoll).length;
   const allHumansReady = allHumans.length === 0 || humanReadyCount === allHumans.length;
 
-  const winProbs = React.useMemo(() => {
-    if (roomState.state !== 'PLAYING' && roomState.state !== 'TIEBREAKER' && roomState.state !== 'GAMEOVER') return {};
-    return calculateWinProbs(roomState.players, pmf, 500);
-  }, [roomState.players, pmf, roomState.state]);
 
   const postGameAnalysis = React.useMemo(() => {
     if (!gameOver) return null;
@@ -375,7 +368,6 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                   const resultStr = tiebreaker.currentFlips[pId];
                   let displayVal = settings.tiebreakerMode === 'rps' ? '❓' : '🪙';
                   let choiceVal = '';
-                  let landedVal = '';
                   
                   if (resultStr && !isTiebreakerAction) {
                     if (settings.tiebreakerMode === 'rps') {
@@ -391,7 +383,6 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                       if (typeof resultStr === 'string' && resultStr.includes(':')) {
                         const [c, l] = resultStr.split(':');
                         choiceVal = c;
-                        landedVal = l;
                         displayVal = l; // Show what it landed on in the circle
                       } else {
                         displayVal = resultStr;
