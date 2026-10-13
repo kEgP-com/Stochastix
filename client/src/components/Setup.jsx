@@ -225,9 +225,14 @@ export default function Setup({ roomState, socket }) {
               <button
                 onClick={submitPlacement}
                 disabled={remaining !== 0}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none text-sm tracking-wide"
+                className={`w-full py-3.5 px-6 rounded-xl font-black text-sm tracking-wide transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
+                  remaining === 0
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-600/40 ring-4 ring-emerald-400/40 animate-pulse cursor-pointer'
+                    : 'bg-slate-800 text-slate-500 border border-slate-700/60 opacity-60 cursor-not-allowed shadow-none'
+                }`}
               >
-                Lock In Placement
+                <span>{remaining === 0 ? '✓' : '🔒'}</span>
+                {remaining === 0 ? 'Lock In Placement (Ready!)' : `Place ${remaining} More Pieces`}
               </button>
             </div>
 
@@ -235,7 +240,7 @@ export default function Setup({ roomState, socket }) {
 
           {/* Right Main Area: Board */}
           <div className="w-full lg:w-2/3">
-            <div className="flex bg-slate-900/60 p-5 rounded-2xl border border-slate-800 overflow-x-auto custom-scrollbar-x gap-2.5 h-full min-h-[320px] shadow-inner transition-colors">
+            <div className="flex bg-slate-900/60 p-4 sm:p-5 rounded-2xl border border-slate-800 overflow-x-auto custom-scrollbar-x gap-2.5 h-full min-h-[300px] sm:min-h-[320px] shadow-inner transition-colors">
               {Array.from({ length: maxSum - minSum + 1 }, (_, i) => i + minSum).map(num => {
                 const prob = pmf.find(p => p.sum === num)?.probability || 0;
                 const intensity = maxProb > 0 ? Math.max(0, prob / maxProb) : 0;
@@ -246,21 +251,21 @@ export default function Setup({ roomState, socket }) {
                 <div 
                   key={num} 
                   onClick={() => handleColumnClick(num)}
-                  className={`flex-1 min-w-[36px] flex flex-col items-center justify-end relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-t-xl transition-colors ${remaining > 0 ? 'cursor-pointer hover:bg-blue-50/50 dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
+                  className={`flex-1 min-w-[34px] sm:min-w-[36px] flex flex-col items-center justify-end relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-t-xl transition-colors ${remaining > 0 ? 'cursor-pointer hover:bg-blue-50/50 dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
                 >
                   {showHeatmap && <div className="absolute inset-0 rounded-t-xl pointer-events-none transition-colors" style={heatmapStyle}></div>}
-                  <div className="absolute top-0 w-full py-1 text-center opacity-50 z-10">
-                    <span className="text-sm font-black text-slate-400 dark:text-slate-500">{num}</span>
+                  <div className="absolute top-0 w-full py-1 text-center opacity-70 z-10">
+                    <span className="text-xs sm:text-sm font-black text-slate-400 dark:text-slate-400">{num}</span>
                     {showHeatmap && (
-                      <div className="text-[9px] font-bold text-green-600 dark:text-green-400 -mt-1">{(prob * 100).toFixed(1)}%</div>
+                      <div className="text-[9px] font-bold text-green-600 dark:text-green-400 -mt-0.5">{(prob * 100).toFixed(1)}%</div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1 pb-1 pt-12 items-center w-full min-h-[200px] z-10">
+                  <div className="flex flex-col gap-1 pb-1 pt-12 items-center w-full min-h-[190px] sm:min-h-[200px] z-10">
                     {Array.from({ length: placement[num] }).map((_, i) => (
                       <div 
                         key={`board-${num}-${i}`}
                         onClick={(e) => handlePieceClick(num, e)}
-                        className="w-full max-w-[40px] h-4 bg-blue-500 dark:bg-blue-600 rounded-sm shadow-sm border-b-2 border-blue-700 dark:border-blue-800 cursor-pointer active:scale-95 hover:bg-red-400 dark:hover:bg-red-500 transition-colors"
+                        className="w-full max-w-[38px] sm:max-w-[40px] h-4 bg-blue-500 dark:bg-blue-600 rounded-sm shadow-sm border-b-2 border-blue-700 dark:border-blue-800 cursor-pointer active:scale-95 hover:bg-red-400 dark:hover:bg-red-500 transition-colors"
                         title="Click to remove"
                       />
                     ))}
@@ -271,6 +276,46 @@ export default function Setup({ roomState, socket }) {
             </div>
           </div>
 
+        </div>
+
+        {/* Sticky Mobile Placement Bar */}
+        <div className="lg:hidden sticky bottom-3 z-30 p-3 bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700/80 shadow-2xl flex items-center justify-between gap-2.5 mt-4 animate-fade-in">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={randomizePlacement}
+              className="text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 p-2.5 rounded-xl transition-colors active:scale-95"
+              title="Randomize"
+            >
+              🎲
+            </button>
+            <button
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={`text-xs font-bold p-2.5 rounded-xl border transition-colors active:scale-95 ${
+                showHeatmap ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'
+              }`}
+              title="Heatmap"
+            >
+              {showHeatmap ? '🔥' : '📊'}
+            </button>
+          </div>
+
+          <div className="text-center px-1.5 shrink-0">
+            <span className="text-[10px] uppercase font-bold text-slate-400 block leading-none">Left</span>
+            <span className={`text-base font-black font-mono leading-tight ${remaining === 0 ? 'text-emerald-400' : 'text-indigo-400'}`}>{remaining}</span>
+          </div>
+
+          <button
+            onClick={submitPlacement}
+            disabled={remaining !== 0}
+            className={`flex-1 py-3 px-4 rounded-xl font-black text-xs tracking-wide transition-all shadow-lg active:scale-95 flex items-center justify-center gap-1.5 ${
+              remaining === 0
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/40 ring-2 ring-emerald-400/60 animate-pulse cursor-pointer'
+                : 'bg-slate-800 text-slate-500 border border-slate-700/60 opacity-60 cursor-not-allowed'
+            }`}
+          >
+            <span>{remaining === 0 ? '✓' : '🔒'}</span>
+            <span>{remaining === 0 ? 'Lock In Placement' : `${remaining} left to place`}</span>
+          </button>
         </div>
 
       </div>

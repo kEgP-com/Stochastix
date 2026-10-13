@@ -487,16 +487,19 @@ export default function Lobby({ roomState, socket, onLeave }) {
 
       </div>
 
-      {/* BOTTOM ACTION BAR */}
-      <div className="glass-panel rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* BOTTOM ACTION BAR - Sticky for easy access */}
+      <div className="sticky bottom-3 z-30 glass-panel bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-2xl border-2 border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in">
         <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 text-center sm:text-left">
           {allHumansReady ? (
             <span className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-2 justify-center sm:justify-start">
-              <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              All players ready! Host can start the match.
+              <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>All players ready! Host can start the match.</span>
             </span>
           ) : (
-            <span>Waiting for all human players to click <strong>Ready Up</strong>.</span>
+            <span className="flex items-center gap-2 justify-center sm:justify-start">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+              <span>Waiting for all human players to click <strong>Ready Up</strong>.</span>
+            </span>
           )}
         </div>
 
@@ -504,14 +507,14 @@ export default function Lobby({ roomState, socket, onLeave }) {
           {/* Ready Button */}
           <button
             onClick={() => socket.emit('toggleLobbyReady', { roomId: roomState.id })}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3.5 px-7 rounded-xl font-black text-sm tracking-wide transition-all shadow-lg active:scale-95 ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3.5 px-7 rounded-xl font-black text-sm tracking-wide transition-all shadow-xl active:scale-95 cursor-pointer ${
               myPlayer?.lobbyReady
                 ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/30 ring-2 ring-amber-400/60'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 ring-2 ring-emerald-400/60'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 ring-4 ring-emerald-400/40 animate-pulse'
             }`}
           >
             <Check className="w-5 h-5" />
-            {myPlayer?.lobbyReady ? 'Unready' : 'Ready Up'}
+            <span>{myPlayer?.lobbyReady ? 'Unready' : 'Ready Up'}</span>
           </button>
 
           {/* Start Game (Host only) */}
@@ -519,10 +522,14 @@ export default function Lobby({ roomState, socket, onLeave }) {
             <button
               onClick={startGame}
               disabled={!allHumansReady}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl font-black text-sm tracking-wide bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-900/40 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none ring-2 ring-indigo-400/60"
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl font-black text-sm tracking-wide transition-all active:scale-95 shadow-xl ${
+                allHumansReady
+                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-indigo-900/40 ring-4 ring-indigo-400/40 animate-pulse cursor-pointer'
+                  : 'bg-slate-700 text-slate-400 border border-slate-600 opacity-60 cursor-not-allowed shadow-none'
+              }`}
             >
               <Play className="w-4 h-4 fill-current" />
-              Start Game
+              <span>Start Game</span>
             </button>
           )}
         </div>
