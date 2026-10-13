@@ -22,15 +22,21 @@ export default function Dashboard({ socket, currentUser }) {
     };
   }, [socket]);
 
+  // Filter history strictly to games that the logged-in user actually participated in
+  const userHistory = useMemo(() => {
+    if (!currentUser?.username) return [];
+    return history.filter(g => g.players?.some(p => p.name === currentUser.username));
+  }, [history, currentUser?.username]);
+
   const availableConfigs = useMemo(() => {
     const configs = new Set();
-    history.forEach(g => {
+    userHistory.forEach(g => {
       const dCount = g.settings?.diceCount || 2;
       const dSides = g.settings?.diceSides || 6;
       configs.add(`${dCount}d${dSides}`);
     });
     return Array.from(configs).sort();
-  }, [history]);
+  }, [userHistory]);
 
   const [chartConfig, setChartConfig] = useState('2d6');
 
@@ -48,7 +54,7 @@ export default function Dashboard({ socket, currentUser }) {
     const diceCount = c || 2;
     const diceSides = s || 6;
 
-    const filteredGames = history.filter(g => {
+    const filteredGames = userHistory.filter(g => {
       const gC = g.settings?.diceCount || 2;
       const gS = g.settings?.diceSides || 6;
       return gC === diceCount && gS === diceSides;
@@ -76,7 +82,7 @@ export default function Dashboard({ socket, currentUser }) {
       expected: parseFloat((p.probability * displayBase).toFixed(1)),
       actual: frequencies[p.sum] || 0
     }));
-  }, [history, chartConfig]);
+  }, [userHistory, chartConfig]);
 
   // Tiebreaker analytics
   const tiebreakerStats = useMemo(() => {
@@ -94,7 +100,7 @@ export default function Dashboard({ socket, currentUser }) {
     let paperCount = 0;
     let scissorsCount = 0;
     
-    history.forEach(g => {
+    userHistory.forEach(g => {
       if (g.tiebreaker) {
         if (!g.settings.tiebreakerMode || g.settings.tiebreakerMode === 'coin') {
           coinGames++;
@@ -134,7 +140,7 @@ export default function Dashboard({ socket, currentUser }) {
       rockCount, paperCount, scissorsCount,
       total: coinGames + rpsGames 
     };
-  }, [history]);
+  }, [userHistory]);
 
   // Theoretical Table Data
   const theoryData = useMemo(() => {
@@ -145,12 +151,12 @@ export default function Dashboard({ socket, currentUser }) {
 
   // Filtered History
   const filteredHistory = useMemo(() => {
-    if (historyFilter === 'all') return history;
-    return history.filter(g => {
+    if (historyFilter === 'all') return userHistory;
+    return userHistory.filter(g => {
       const isWin = g.winner === currentUser?.username;
       return historyFilter === 'win' ? isWin : !isWin;
     });
-  }, [history, historyFilter, currentUser?.username]);
+  }, [userHistory, historyFilter, currentUser?.username]);
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -161,17 +167,17 @@ export default function Dashboard({ socket, currentUser }) {
   ];
 
   const careerStats = useMemo(() => {
-    if (history.length === 0) return null;
+    if (userHistory.length === 0) return null;
     
     // Average Rolls per game
-    const totalRolls = history.reduce((sum, g) => sum + g.totalRolls, 0);
-    const avgRolls = Math.round(totalRolls / history.length);
+    const totalRolls = userHistory.reduce((sum, g) => sum + g.totalRolls, 0);
+    const avgRolls = Math.round(totalRolls / userHistory.length);
     
     // Win Rate by Dice Config
     const configStats = {};
     const rivalStats = {};
 
-    history.forEach(g => {
+    userHistory.forEach(g => {
       const isWin = g.winner === currentUser?.username;
       
       const config = `${g.settings.diceCount}d${g.settings.diceSides}`;
@@ -212,7 +218,7 @@ export default function Dashboard({ socket, currentUser }) {
       nemesis: nemesisLosses > 0 ? { name: nemesis, count: nemesisLosses } : null,
       punchingBag: punchingBagWins > 0 ? { name: punchingBag, count: punchingBagWins } : null
     };
-  }, [history, currentUser]);
+  }, [userHistory, currentUser]);
 
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -248,7 +254,7 @@ export default function Dashboard({ socket, currentUser }) {
         <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Analytics Dashboard</h2>
         <div className="flex items-center gap-4">
           <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
-            {history.length} Games Played
+            {userHistory.length} Games Played
           </div>
           <button 
             onClick={() => setShowProfileSettings(true)}
@@ -367,19 +373,19 @@ export default function Dashboard({ socket, currentUser }) {
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                  <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Your Wins</div>
                  <div className="text-3xl font-black text-green-600 dark:text-green-400">
-                    {history.filter(g => g.winner === currentUser?.username).length}
+                    {userHistory.filter(g => g.winner === currentUser?.username).length}
                  </div>
                </div>
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                  <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Win Rate</div>
                  <div className="text-3xl font-black text-indigo-500 dark:text-indigo-400">
-                    {history.length > 0 ? Math.round((history.filter(g => g.winner === currentUser?.username).length / history.length) * 100) : 0}%
+                    {userHistory.length > 0 ? Math.round((userHistory.filter(g => g.winner === currentUser?.username).length / userHistory.length) * 100) : 0}%
                  </div>
                </div>
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
                  <div className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Total Rolls Recorded</div>
                  <div className="text-3xl font-black text-blue-600 dark:text-blue-400">
-                    {history.reduce((sum, g) => sum + g.totalRolls, 0)}
+                    {userHistory.reduce((sum, g) => sum + g.totalRolls, 0)}
                  </div>
                </div>
                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
