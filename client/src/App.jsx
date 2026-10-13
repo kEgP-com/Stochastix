@@ -1,5 +1,20 @@
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { 
+  Dices, 
+  Sun, 
+  Moon, 
+  LogOut, 
+  ArrowRight, 
+  Users, 
+  Bot, 
+  Coins, 
+  Menu, 
+  X, 
+  LayoutDashboard,
+  Gamepad2,
+  WifiOff
+} from 'lucide-react';
 import Lobby from './components/Lobby';
 import Setup from './components/Setup';
 import GameBoard from './components/GameBoard';
@@ -8,6 +23,7 @@ import Dashboard from './components/Dashboard';
 // Connect to the local server or deployed server
 const socketUrl = import.meta.env.MODE === 'production' ? undefined : 'http://localhost:3001';
 const socket = io(socketUrl, { transports: ['websocket'] });
+
 function App() {
   const [currentView, setCurrentView] = useState('PLAY'); // 'PLAY' | 'DASHBOARD'
   const [roomState, setRoomState] = useState(null);
@@ -20,11 +36,12 @@ function App() {
   const [tiebreakerResults, setTiebreakerResults] = useState(null);
   const [pendingState, setPendingState] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isConnected, setIsConnected] = useState(socket.connected);
   
-  // Dark mode
+  // Dark mode - default to dark for optimal eye comfort
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return saved !== 'light';
   });
 
   useEffect(() => {
@@ -37,15 +54,25 @@ function App() {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
+
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('currentUser');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // If it's an old string fallback to object
         if (typeof parsed === 'string') return { username: parsed, points: 1000 };
         return parsed;
-      } catch (e) {
+      } catch {
         return { username: saved, points: 1000 };
       }
     }
@@ -124,7 +151,6 @@ function App() {
     });
 
     socket.on('disconnect', () => {
-      // If the server restarts, clear the ghost room
       setRoomState(null);
       setPendingState(null);
       setRoomId('');
@@ -144,47 +170,49 @@ function App() {
       socket.off('authSuccess');
       socket.off('pointsUpdated');
       socket.off('authError');
-      socket.off('error');
-      socket.off('disconnect');
       socket.off('profileUpdated');
       socket.off('registerSuccess');
+      socket.off('error');
+      socket.off('disconnect');
       socket.off('kicked');
     };
   }, []);
 
   useEffect(() => {
-    if (!isRolling && !isTiebreakerAction && pendingState) {
+    if (pendingState && !isRolling && !isTiebreakerAction) {
       setRoomState(pendingState);
       setPendingState(null);
+      setError('');
     }
-  }, [isRolling, isTiebreakerAction, pendingState]);
+  }, [pendingState, isRolling, isTiebreakerAction]);
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
-  const [resetCodeSent, setResetCodeSent] = useState(false);
   const [resetCode, setResetCode] = useState('');
+  const [resetCodeSent, setResetCodeSent] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   useEffect(() => {
     socket.on('passwordResetRequested', () => {
+      setIsAuthLoading(false);
       setResetCodeSent(true);
-      setError('');
-      setSuccessMsg('');
+      setSuccessMsg('A reset code has been sent! Check server console / logs.');
     });
+
     socket.on('passwordResetSuccess', () => {
-      setSuccessMsg('Password reset successful! You can now log in.');
-      setError('');
+      setIsAuthLoading(false);
+      setSuccessMsg('Password updated successfully! Please log in.');
       setIsForgotPasswordMode(false);
       setResetCodeSent(false);
-      setResetCode('');
       setPassword('');
       setConfirmPassword('');
+      setResetCode('');
     });
-    
-    // Stop loading when these events fire
+
     const stopLoading = () => setIsAuthLoading(false);
     socket.on('authSuccess', stopLoading);
     socket.on('authError', stopLoading);
@@ -198,9 +226,9 @@ function App() {
       socket.off('authError', stopLoading);
       socket.off('error', stopLoading);
       socket.off('registerSuccess', stopLoading);
-    }
+    };
   }, []);
-  
+
   const handleAuth = () => {
     setError('');
     setSuccessMsg('');
@@ -234,19 +262,20 @@ function App() {
   };
 
   const logout = () => {
-    setCurrentUser(null);
     localStorage.removeItem('currentUser');
-    if (roomState) leaveRoom();
+    setCurrentUser(null);
+    setRoomState(null);
+    setRoomId('');
   };
 
-  const createRoom = () => {
-    socket.emit('createRoom', { name: currentUser.username, isSinglePlayer: false });
+  const createRoom = (isSinglePlayer = false) => {
+    socket.emit('createRoom', { name: currentUser.username, isSinglePlayer: !!isSinglePlayer });
   };
 
   const joinRoom = (id) => {
     if (!id) return setError('Please enter a room code');
-    socket.emit('joinRoom', { roomId: id, name: currentUser.username });
-    setRoomId(id);
+    socket.emit('joinRoom', { roomId: id.trim().toUpperCase(), name: currentUser.username });
+    setRoomId(id.trim().toUpperCase());
   };
 
   const leaveRoom = () => {
@@ -260,153 +289,183 @@ function App() {
 
   // Nav Bar
   const Header = () => (
-    <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 shadow-sm transition-colors z-50">
-      <div className="flex justify-between items-center w-full relative">
-        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { if(roomState) leaveRoom(); }}>
-          {/* Logo */}
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9c-.83 0-1.5-.67-1.5-1.5S6.67 6 7.5 6s1.5.67 1.5 1.5S8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5S17.33 9 16.5 9z"/>
-            </svg>
+    <header className="sticky top-0 glass-panel border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-3.5 shadow-md dark:shadow-xl transition-all z-50">
+      <div className="relative flex justify-between items-center w-full max-w-7xl mx-auto">
+        {/* Brand */}
+        <div 
+          className="flex items-center gap-2.5 cursor-pointer select-none group" 
+          onClick={() => { if(roomState) leaveRoom(); }}
+        >
+          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+            <Dices className="h-5 w-5 text-white" />
           </div>
-          <h1 className="text-xl md:text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Stochastix</h1>
+          <span className="text-xl font-black tracking-tight font-display text-slate-900 dark:text-white">
+            Stochastix
+          </span>
         </div>
 
-        {/* Centered Desktop Nav Items */}
-        <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 space-x-8">
+        {/* Center Nav tabs (Desktop) - True Mathematical 50% Dead Center */}
+        <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
           <button 
             onClick={() => setCurrentView('PLAY')} 
-            className={`font-semibold text-lg transition ${currentView === 'PLAY' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              currentView === 'PLAY' 
+                ? 'bg-indigo-600 text-white shadow-md' 
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'
+            }`}
           >
+            <Gamepad2 className="w-4 h-4" />
             Play
           </button>
           <button 
             onClick={() => setCurrentView('DASHBOARD')} 
-            className={`font-semibold text-lg transition ${currentView === 'DASHBOARD' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
+              currentView === 'DASHBOARD' 
+                ? 'bg-indigo-600 text-white shadow-md' 
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'
+            }`}
           >
-            Dashboard
+            <LayoutDashboard className="w-4 h-4" />
+            Analytics
           </button>
         </nav>
 
-        {/* Mobile Hamburger Button */}
-        <button 
-          className="md:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors focus:outline-none"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-          </svg>
-        </button>
-
-        {/* Desktop Profile and Icons */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="flex items-center gap-4">
-            {currentUser && (
-              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3">
-                <span className="flex items-center gap-4">
-                  <span className="font-bold text-slate-800 dark:text-slate-100">Hello, {currentUser.username}</span>
-                  <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs border border-yellow-200 dark:border-yellow-700 whitespace-nowrap mr-2">
-                    💰 {currentUser.points || 1000}
-                  </span>
-                </span>
-                <button 
-                  onClick={logout} 
-                  className="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-800 p-2 rounded-lg transition-all duration-300 ease-in-out shadow-sm active:scale-95"
-                  title="Logout"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                </button>
-              </div>
-            )}
-            
-            {roomState && (
-              <div className="flex items-center space-x-3 border-l border-slate-200 dark:border-slate-700 pl-4">
-                <div className="bg-blue-50 dark:bg-slate-900/60 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-lg font-mono font-bold text-sm border border-blue-200 dark:border-blue-800 shadow-inner tracking-wider">
-                  <span className="text-blue-400 dark:text-blue-500 mr-1 text-xs uppercase tracking-widest font-sans">Room:</span>
-                  {roomState.id}
+        {/* Desktop Profile & Actions */}
+        <div className="hidden md:flex items-center gap-3">
+          {currentUser && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+                  {currentUser.username[0]?.toUpperCase() || 'U'}
                 </div>
-                <button 
-                  onClick={leaveRoom}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg font-bold text-sm shadow-md shadow-red-600/20 active:scale-95 transition-all whitespace-nowrap"
-                >
-                  Leave
-                </button>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                  {currentUser.username}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50">
+                  <Coins className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  {(currentUser.points || 1000).toLocaleString()}
+                </span>
               </div>
-            )}
-            
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-              title="Toggle Theme"
-            >
-              {isDark ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-              )}
-            </button>
-          </div>
+
+              <button 
+                onClick={logout} 
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-red-500/15 border border-slate-200 dark:border-slate-700 hover:border-red-500/40 text-slate-600 dark:text-slate-300 hover:text-red-500 transition-all active:scale-95"
+                title="Log out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {roomState && (
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+              <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/40">
+                Room: {roomState.id}
+              </span>
+              <button 
+                onClick={leaveRoom}
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all active:scale-95 shadow-sm shadow-red-900/30"
+              >
+                Leave
+              </button>
+            </div>
+          )}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition-colors active:scale-95"
+            title="Toggle Theme"
+          >
+            {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-600" />}
+          </button>
+        </div>
+
+        {/* Mobile Action Controls */}
+        <div className="flex md:hidden items-center gap-2">
+          {currentUser && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30">
+              <Coins className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+              {(currentUser.points || 1000).toLocaleString()}
+            </span>
+          )}
+
+          {/* Direct 1-tap Theme switch for mobile */}
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 active:scale-95"
+            title="Toggle Dark/Light"
+          >
+            {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-600" />}
+          </button>
+
+          <button 
+            className="p-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors border border-slate-200 dark:border-slate-800"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-col space-y-4 animate-fade-in">
-          <nav className="flex flex-col space-y-2">
+        <div className="md:hidden mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col space-y-3 animate-fade-in max-w-7xl mx-auto">
+          <nav className="grid grid-cols-2 gap-2">
             <button 
               onClick={() => { setCurrentView('PLAY'); setIsMobileMenuOpen(false); }} 
-              className={`text-left px-4 py-2 rounded-lg font-semibold transition ${currentView === 'PLAY' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition ${
+                currentView === 'PLAY' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
+              }`}
             >
+              <Gamepad2 className="w-4 h-4" />
               Play
             </button>
             <button 
               onClick={() => { setCurrentView('DASHBOARD'); setIsMobileMenuOpen(false); }} 
-              className={`text-left px-4 py-2 rounded-lg font-semibold transition ${currentView === 'DASHBOARD' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition ${
+                currentView === 'DASHBOARD' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
+              }`}
             >
-              Dashboard
+              <LayoutDashboard className="w-4 h-4" />
+              Analytics
             </button>
           </nav>
 
           {currentUser && (
-            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="font-bold text-slate-800 dark:text-slate-100">Hello, {currentUser.username}</span>
-                <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 dark:border-yellow-700 mr-2">
-                  💰 {currentUser.points || 1000}
-                </span>
+            <div className="p-3 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">
+                  {currentUser.username[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{currentUser.username}</div>
+                  <div className="text-xs text-amber-600 dark:text-amber-400 font-mono font-bold">🪙 {(currentUser.points || 1000).toLocaleString()} pts</div>
+                </div>
               </div>
               <button 
                 onClick={logout}
-                className="bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800/60 border border-red-200 dark:border-red-800 px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm active:scale-95 transition-all duration-300 ease-in-out"
+                className="text-xs font-bold text-red-600 dark:text-red-400 hover:text-red-700 bg-red-100 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-3 py-1.5 rounded-lg"
               >
-                Logout
+                Log Out
               </button>
             </div>
           )}
 
-          <div className="flex justify-between items-center px-4">
-            <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">Theme</span>
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
-            >
-              {isDark ? "🌞 Light Mode" : "🌙 Dark Mode"}
-            </button>
-          </div>
-
           {roomState && (
-            <div className="flex flex-col gap-2 pt-2 pb-2">
-              <div className="bg-blue-50 dark:bg-slate-900/60 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-lg font-mono font-bold text-sm border border-blue-200 dark:border-blue-800 text-center tracking-wider">
-                <span className="text-blue-400 dark:text-blue-500 mr-2 text-xs uppercase tracking-widest font-sans">Room Code:</span>
-                {roomState.id}
-              </div>
+            <div className="flex items-center gap-2 p-2 bg-indigo-100/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 rounded-xl">
+              <span className="flex-1 text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300 text-center">
+                Room: {roomState.id}
+              </span>
               <button 
                 onClick={leaveRoom}
-                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md shadow-red-600/20"
+                className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm"
               >
-                Leave Game
+                Leave
               </button>
             </div>
           )}
@@ -415,21 +474,48 @@ function App() {
     </header>
   );
 
+  // AUTH SCREEN
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans flex flex-col items-center justify-center transition-colors p-4">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-100 dark:border-slate-700 transition-colors">
-          <div className="flex justify-center items-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18c-.83 0-1.5-.67-1.5-1.5S6.67 15 7.5 15s1.5.67 1.5 1.5S8.33 18 7.5 18zm0-9c-.83 0-1.5-.67-1.5-1.5S6.67 6 7.5 6s1.5.67 1.5 1.5S8.33 9 7.5 9zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4.5 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm0-9c-.83 0-1.5-.67-1.5-1.5S15.67 6 16.5 6s1.5.67 1.5 1.5S17.33 9 16.5 9z"/>
-              </svg>
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 bg-ambient-glow flex flex-col justify-center items-center p-4 transition-colors">
+        <div className="max-w-md w-full glass-panel rounded-2xl shadow-xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 relative">
+          
+          {/* Header */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-3">
+              <Dices className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Stochastix</h1>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-display text-slate-900 dark:text-white">
+              Stochastix
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 font-medium">
+              {isForgotPasswordMode 
+                ? 'Account Password Recovery' 
+                : isLoginMode 
+                  ? 'Sign in to jump into the arena' 
+                  : 'Create your probability gaming profile'}
+            </p>
           </div>
           
-          {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-3 rounded-lg mb-6 text-sm font-medium">{error}</div>}
-          {successMsg && <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 p-3 rounded-lg mb-6 text-sm font-medium">{successMsg}</div>}
+          {/* Error & Success Alerts */}
+          {error && (
+            <div className="bg-red-500/15 border border-red-500/30 text-red-300 p-3 rounded-xl mb-4 text-xs font-semibold animate-fade-in">
+              {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 p-3 rounded-xl mb-4 text-xs font-semibold animate-fade-in">
+              {successMsg}
+            </div>
+          )}
+
+          {/* Server status alert if offline */}
+          {!isConnected && (
+            <div className="bg-amber-500/15 border border-amber-500/30 text-amber-300 p-3 rounded-xl mb-4 text-xs font-semibold flex items-center gap-2">
+              <WifiOff className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>Connecting to game server... make sure backend is running.</span>
+            </div>
+          )}
           
           <div className="space-y-4">
             {isForgotPasswordMode ? (
@@ -437,29 +523,24 @@ function App() {
                 {!resetCodeSent ? (
                   <>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                        Email Address
+                      </label>
                       <input
                         type="email"
-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                        className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors text-slate-100 text-sm"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your registered email"
+                        placeholder="your-email@domain.com"
                       />
                     </div>
                     <button
                       onClick={handlePasswordReset}
                       disabled={isAuthLoading}
-                      className={`w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition shadow-md shadow-blue-500/20 mt-2 flex justify-center items-center h-12 ${
-                        isAuthLoading 
-                          ? 'opacity-75 cursor-wait' 
-                          : 'hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95'
-                      }`}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-900/30 flex justify-center items-center h-11 text-sm disabled:opacity-60"
                     >
                       {isAuthLoading ? (
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
                         'Send Reset Code'
                       )}
@@ -467,14 +548,16 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 p-3 rounded-lg mb-4 text-sm font-medium">
-                      A 6-digit code has been sent to your email. (Check server logs if testing locally).
+                    <div className="bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 p-3 rounded-xl text-xs font-medium">
+                      A 6-digit code was generated. (Check server logs if testing locally).
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">6-Digit Code</label>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        6-Digit Code
+                      </label>
                       <input
                         type="text"
-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white tracking-widest text-center text-lg"
+                        className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 outline-none text-center tracking-widest text-lg font-mono text-white"
                         value={resetCode}
                         onChange={(e) => setResetCode(e.target.value)}
                         placeholder="000000"
@@ -482,19 +565,23 @@ function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        New Password
+                      </label>
                       <input
                         type="password"
-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                        className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 outline-none text-slate-100 text-sm"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Confirm New Password
+                      </label>
                       <input
                         type="password"
-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                        className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 outline-none text-slate-100 text-sm"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
@@ -502,29 +589,22 @@ function App() {
                     <button
                       onClick={handlePasswordReset}
                       disabled={isAuthLoading}
-                      className={`w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition shadow-md shadow-blue-500/20 mt-2 flex justify-center items-center h-12 ${
-                        isAuthLoading 
-                          ? 'opacity-75 cursor-wait' 
-                          : 'hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95'
-                      }`}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-900/30 flex justify-center items-center h-11 text-sm disabled:opacity-60"
                     >
                       {isAuthLoading ? (
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
                         'Reset Password'
                       )}
                     </button>
                   </>
                 )}
-                <div className="text-center mt-4">
+                <div className="text-center pt-2">
                   <button
                     onClick={() => { setIsForgotPasswordMode(false); setError(''); setResetCodeSent(false); }}
-                    className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:underline"
+                    className="text-xs font-semibold text-slate-400 hover:text-indigo-300 transition-colors"
                   >
-                    Back to Login
+                    ← Back to Login
                   </button>
                 </div>
               </>
@@ -532,29 +612,37 @@ function App() {
               <>
                 {!isLoginMode && (
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email (for verification)</label>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                      Email (for verification)
+                    </label>
                     <input
                       type="email"
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                      className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors text-slate-100 text-sm"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. player@example.com"
                     />
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Username</label>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Username
+                  </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors text-slate-100 text-sm"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a callsign"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Password
+                  </label>
                   <input
                     type="password"
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors text-slate-100 text-sm"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && isLoginMode && handleAuth()}
@@ -562,49 +650,45 @@ function App() {
                 </div>
                 {!isLoginMode && (
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                      Confirm Password
+                    </label>
                     <input
                       type="password"
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors dark:text-white"
+                      className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700/80 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors text-slate-100 text-sm"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
                     />
                   </div>
                 )}
+                
                 <button
                   onClick={handleAuth}
                   disabled={isAuthLoading}
-                  className={`w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition shadow-md shadow-blue-500/20 mt-2 flex justify-center items-center h-12 ${
-                    isAuthLoading 
-                      ? 'opacity-75 cursor-wait' 
-                      : 'hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95'
-                  }`}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-900/30 flex justify-center items-center h-11 text-sm mt-2 disabled:opacity-60 active:scale-98"
                 >
                   {isAuthLoading ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    isLoginMode ? 'Log In' : 'Sign Up'
+                    isLoginMode ? 'Sign In' : 'Create Account'
                   )}
                 </button>
                 
-                <div className="flex flex-col items-center gap-3 mt-4">
+                <div className="flex flex-col items-center gap-2 pt-2">
                   {isLoginMode && (
                     <button
                       onClick={() => { setIsForgotPasswordMode(true); setError(''); }}
-                      className="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:underline"
+                      className="text-xs text-slate-400 hover:text-indigo-300 transition-colors"
                     >
-                      Forgot Password?
+                      Forgot your password?
                     </button>
                   )}
                   <button
                     onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }}
-                    className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
                   >
-                    {isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+                    {isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
                   </button>
                 </div>
               </>
@@ -615,55 +699,118 @@ function App() {
     );
   }
 
+  // DASHBOARD VIEW
   if (currentView === 'DASHBOARD') {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors">
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 bg-ambient-glow flex flex-col transition-colors">
         <Header />
-        <Dashboard socket={socket} currentUser={currentUser} />
+        <main className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full">
+          <Dashboard socket={socket} currentUser={currentUser} />
+        </main>
       </div>
     );
   }
 
+  // WELCOME / PLAY SELECTION SCREEN (When no active room)
   if (!roomState) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans flex flex-col transition-colors">
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 bg-ambient-glow flex flex-col transition-colors">
         <Header />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-100 dark:border-slate-700 transition-colors">
-            <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white mb-8">Play Stochastix</h2>
+        
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
+          <div className="max-w-md w-full glass-panel rounded-3xl shadow-xl dark:shadow-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden animate-fade-in">
             
-            {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-3 rounded-lg mb-6 text-sm font-medium">{error}</div>}
+            {/* Subtle background glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+            {/* Emblem & Headline */}
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 rounded-2xl bg-indigo-100 dark:bg-indigo-600/20 border border-indigo-200 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-300 mb-3 shadow-sm">
+                <Dices className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight font-display text-slate-900 dark:text-white">
+                Play Stochastix
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium">
+                Strategic block placement & probability dice warfare
+              </p>
+            </div>
             
-            <div className="space-y-5">
+            {error && (
+              <div className="bg-red-100 dark:bg-red-500/20 border border-red-300 dark:border-red-500/40 text-red-800 dark:text-red-200 p-3 rounded-xl mb-5 text-xs font-bold animate-fade-in">
+                {error}
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              {/* Primary: Create Multiplayer Game */}
               <button
-                onClick={createRoom}
-                className="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:scale-95 transition shadow-md shadow-blue-500/20"
+                onClick={() => createRoom(false)}
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black transition-all shadow-lg shadow-indigo-600/30 active:scale-98 group"
               >
-                Create New Game
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-white/20">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-extrabold text-white">Create Game</div>
+                    <div className="text-xs text-indigo-100 font-medium">Host lobby with friends or AI</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-indigo-100 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              {/* Secondary: Single Player vs AI */}
+              <button
+                onClick={() => createRoom(true)}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold transition-all active:scale-98 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-violet-100 dark:bg-violet-600/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/40">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-bold text-slate-900 dark:text-white">Solo Practice vs AI</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Quick instant 1v1 match</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </button>
               
-              <div className="relative py-4">
+              {/* Divider */}
+              <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-medium tracking-wide uppercase text-xs">Or join existing</span>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-3 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider text-[11px]">
+                    Or enter a room code
+                  </span>
                 </div>
               </div>
               
-              <div className="flex space-x-2">
+              {/* Room Code input group */}
+              <div className="flex gap-2">
                 <input
                   type="text"
-                  className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-slate-500 focus:border-transparent outline-none uppercase font-mono tracking-wider transition-colors dark:text-white"
+                  className="flex-1 px-4 py-3 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 outline-none uppercase font-mono tracking-widest text-center text-base font-extrabold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors rounded-xl"
                   placeholder="ROOM CODE"
+                  maxLength={10}
                   onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && joinRoom(roomId)}
                 />
                 <button
                   onClick={() => joinRoom(roomId)}
-                  className="bg-slate-800 dark:bg-slate-700 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-slate-900 dark:hover:bg-slate-600 active:scale-95 transition shadow-md"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3 px-6 rounded-xl transition-all shadow-md shadow-indigo-600/30 active:scale-95 text-sm"
                 >
                   Join
                 </button>
+              </div>
+
+              {/* Tips Footer */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span>⚡ Instant multiplayer sync</span>
+                <span>🎲 2 to 8 players</span>
               </div>
             </div>
           </div>
@@ -672,11 +819,12 @@ function App() {
     );
   }
 
+  // ACTIVE GAME STATE (LOBBY / SETUP / PLAYING / TIEBREAKER / GAMEOVER)
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans flex flex-col transition-colors">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 bg-ambient-glow font-sans flex flex-col transition-colors">
       <Header />
       
-      <main className="flex-1 max-w-7xl mx-auto p-6 w-full animate-fade-in">
+      <main className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full animate-fade-in">
         {roomState.state === 'LOBBY' && (
           <Lobby roomState={roomState} socket={socket} onLeave={leaveRoom} />
         )}
@@ -684,7 +832,14 @@ function App() {
           <Setup roomState={roomState} socket={socket} />
         )}
         {(roomState.state === 'PLAYING' || roomState.state === 'TIEBREAKER' || roomState.state === 'GAMEOVER') && (
-          <GameBoard roomState={roomState} socket={socket} lastRoll={lastRoll} isRollingGlobal={isRolling} isTiebreakerAction={isTiebreakerAction} tiebreakerResults={tiebreakerResults} />
+          <GameBoard 
+            roomState={roomState} 
+            socket={socket} 
+            lastRoll={lastRoll} 
+            isRollingGlobal={isRolling} 
+            isTiebreakerAction={isTiebreakerAction} 
+            tiebreakerResults={tiebreakerResults} 
+          />
         )}
       </main>
     </div>

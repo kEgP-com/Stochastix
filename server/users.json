@@ -1,1 +1,10 @@
-{"sad":{"points":1000}}
+{
+  "sad": {
+    "points": 1000
+  },
+  "Shiru": {
+    "points": 1000,
+    "password": "Shiru2323",
+    "email": "nielarvin23@gmail.com"
+  }
+}
