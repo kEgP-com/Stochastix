@@ -145,33 +145,61 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
       
       {/* Left Column: Board and Rolls */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-5 sm:p-8 transition-colors flex flex-col">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-200 dark:border-slate-700/80 pb-4">
-            <div className="flex items-center gap-3">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-4 sm:p-6 lg:p-7 transition-colors flex flex-col overflow-hidden">
+          {/* Header Row: Title & Badges */}
+          <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700/80 flex-wrap">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap font-display">
                 Game Board
               </h2>
               <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 {roomState.history.length} Rolls
               </span>
-              {roomState.history.length === 0 && !isRollingGlobal && (
-                <button
-                  onClick={() => socket.emit('unreadyPlacement', { roomId: roomState.id })}
-                  className="text-xs font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-                  title="Return to setup phase to change your piece placement"
-                >
-                  Edit Board
-                </button>
-              )}
             </div>
 
-            {!gameOver && !isTiebreaker && (
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto justify-start sm:justify-end">
+            {roomState.history.length === 0 && !isRollingGlobal && (
+              <button
+                onClick={() => socket.emit('unreadyPlacement', { roomId: roomState.id })}
+                className="text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                title="Return to setup phase to change your piece placement"
+              >
+                Edit Board
+              </button>
+            )}
+          </div>
+
+          {/* Dedicated Action Command Bar */}
+          {!gameOver && !isTiebreaker && (
+            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 sm:p-3.5 border border-slate-200 dark:border-slate-700/80 mb-6 flex flex-wrap items-center justify-between gap-3 shadow-inner">
+              {/* Status / Readiness Info */}
+              <div className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                {roomState.history.length === 0 ? (
+                  allHumansReady ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-extrabold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      All players ready!
+                    </span>
+                  ) : (
+                    <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                      Waiting ({humanReadyCount}/{allHumans.length} ready)
+                    </span>
+                  )
+                ) : (
+                  <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                    {isRollingGlobal ? 'Rolling dice...' : 'Match in progress'}
+                  </span>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                 {roomState.history.length === 0 && (
                   <button
                     onClick={() => socket.emit('toggleReadyToRoll', { roomId: roomState.id })}
                     disabled={isRollingGlobal}
-                    className={`font-black text-sm py-3 px-6 sm:px-7 rounded-xl shadow-lg active:scale-95 transition-all whitespace-nowrap flex-1 sm:flex-none flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`font-black text-xs sm:text-sm py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       isRollingGlobal 
                         ? 'opacity-50 cursor-not-allowed bg-slate-500 text-white' 
                         : me?.readyToRoll 
@@ -180,52 +208,52 @@ export default function GameBoard({ roomState, socket, lastRoll, isRollingGlobal
                     }`}
                   >
                     <span>{me?.readyToRoll ? '✓' : '⚡'}</span>
-                    {isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? 'Cancel Ready' : 'Click to Ready')}
+                    <span>{isRollingGlobal ? 'Rolling...' : (me?.readyToRoll ? 'Cancel Ready' : 'Click to Ready')}</span>
                   </button>
                 )}
 
-                {(roomState.host === socket.id) ? (
-                  <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                {roomState.host === socket.id && (
+                  <>
                     <button
                       onClick={() => setAutoRoll(!autoRoll)}
-                      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-extrabold text-xs sm:text-sm transition-all active:scale-95 border flex-1 sm:flex-none cursor-pointer ${
+                      className={`flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-extrabold text-xs transition-all active:scale-95 border cursor-pointer ${
                         autoRoll 
                           ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' 
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 shadow-sm'
                       }`}
                     >
-                      <div className={`w-7 h-4 rounded-full flex items-center p-[2px] transition-colors ${autoRoll ? 'bg-indigo-300' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                        <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${autoRoll ? 'translate-x-3' : 'translate-x-0'}`} />
+                      <div className={`w-6 h-3.5 rounded-full flex items-center p-[2px] transition-colors ${autoRoll ? 'bg-indigo-300' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                        <div className={`w-2.5 h-2.5 bg-white rounded-full shadow-sm transition-transform ${autoRoll ? 'translate-x-2.5' : 'translate-x-0'}`} />
                       </div>
-                      <span className="whitespace-nowrap">Auto-Roll</span>
+                      <span>Auto-Roll</span>
                     </button>
 
                     <button
                       onClick={() => socket.emit('hostForceRoll', { roomId: roomState.id })}
                       disabled={isRollingGlobal}
-                      className={`text-white font-black text-sm sm:text-base py-3 px-6 sm:px-8 rounded-xl shadow-xl transition-all whitespace-nowrap flex-1 sm:flex-none active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`text-white font-black text-xs sm:text-sm py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
                         isRollingGlobal 
                           ? 'opacity-50 cursor-not-allowed bg-slate-500' 
                           : roomState.history.length === 0 && !allHumansReady
                             ? 'bg-slate-500 dark:bg-slate-600 hover:bg-slate-600 shadow-slate-900/30'
-                            : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-600/40 ring-2 ring-indigo-400/40 hover:-translate-y-0.5'
+                            : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-600/40 ring-2 ring-indigo-400/40'
                       }`}
                     >
                       <span>🎲</span>
-                      {isRollingGlobal ? 'Rolling...' : (roomState.history.length === 0 && !allHumansReady ? `Force Roll (${humanReadyCount}/${allHumans.length})` : 'Roll Dice')}
+                      <span>{isRollingGlobal ? 'Rolling...' : (roomState.history.length === 0 && !allHumansReady ? `Force Roll (${humanReadyCount}/${allHumans.length})` : 'Roll Dice')}</span>
                     </button>
+                  </>
+                )}
+
+                {roomState.host !== socket.id && roomState.history.length > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                    <span>{isRollingGlobal ? 'Rolling dice...' : 'Waiting for host to roll...'}</span>
                   </div>
-                ) : (
-                  roomState.history.length > 0 && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-sm">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                      <span>{isRollingGlobal ? 'Rolling dice...' : 'Waiting for host to roll...'}</span>
-                    </div>
-                  )
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Mobile Current Roll Banner (lg:hidden) */}
           <div className="lg:hidden bg-slate-100 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/80 mb-6 text-center shadow-inner">
